@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unimog Community Hub - Connect, Share, Explore</title>
+    <meta name="description" content="The ultimate community platform for Unimog enthusiasts. Connect with fellow owners, share knowledge, plan expeditions, and live the Unimog lifestyle." />
+    <meta name="author" content="Unimog Community Hub" />
+
+    <!-- Force favicon refresh with timestamp -->
+    <link rel="shortcut icon" href="/favicon.ico?t=1754719200" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?t=1754719200" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?t=1754719200" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?t=1754719200" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?t=1754719200" />
+    <link rel="manifest" href="/site.webmanifest?t=1754719200" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Unimog Community Hub - Connect, Share, Explore" />
+    <meta property="og:description" content="The ultimate community platform for Unimog enthusiasts. Connect with fellow owners, share knowledge, plan expeditions, and live the Unimog lifestyle." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://ydevatqwkoccxhtejdor.supabase.co/storage/v1/object/public/site_assets/hero-wheels.jpg" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Unimog Community Hub" />
+    <meta name="twitter:description" content="The ultimate community platform for Unimog enthusiasts." />
+    <meta name="twitter:image" content="https://ydevatqwkoccxhtejdor.supabase.co/storage/v1/object/public/site_assets/hero-wheels.jpg" />
+    
+    <!-- Adding Special Elite font for rugged styling -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+  </head>
+
+  <body>
+    <!-- Facebook SDK initialization -->
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId: '1431653571538817',
+          cookie: true,
+          xfbml: true,
+          version: 'v18.0'
+        });
+      };
+
+      (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+      }(document, 'script', 'facebook-jssdk'));
+    </script>
+    
+    <div id="root"></div>
+    
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
