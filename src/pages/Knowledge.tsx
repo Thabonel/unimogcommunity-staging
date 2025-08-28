@@ -60,18 +60,18 @@ const Knowledge = () => {
 
         {/* Three main sections as cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* Community Articles */}
+          {/* Community Recommendations */}
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <FileText className="h-8 w-8 mb-2 text-primary" />
-              <CardTitle>Community Articles</CardTitle>
+              <CardTitle>Community Recommendations</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                User-submitted guides, tips, and experiences from fellow Unimog owners worldwide
+                User-recommended guides, tips, and experiences from fellow Unimog owners worldwide
               </p>
               <Button asChild className="w-full">
-                <Link to="/knowledge/articles">Browse Articles</Link>
+                <Link to="/knowledge/recommendations">Browse Recommendations</Link>
               </Button>
             </CardContent>
           </Card>
@@ -112,7 +112,7 @@ const Knowledge = () => {
         </div>
         
         <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-3">Browse Community Articles by Category</h2>
+          <h2 className="text-xl font-semibold mb-3">Browse Community Recommendations by Category</h2>
         </div>
         
         <KnowledgeNavigation />
