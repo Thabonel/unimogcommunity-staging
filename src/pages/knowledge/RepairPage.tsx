@@ -1,33 +1,18 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { FileText, Hammer } from 'lucide-react';
-import { ArticleSubmissionDialog } from '@/components/knowledge/ArticleSubmissionDialog';
-import { CategoryArticlesList } from '@/components/admin/CategoryArticlesList';
+import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
+import { RecommendationSubmissionDialog } from '@/components/knowledge/RecommendationSubmissionDialog';
 import { KnowledgeNavigation } from '@/components/knowledge/KnowledgeNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/profile';
-import { supabase } from '@/lib/supabase-client';
 
 const RepairPage = () => {
   const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
   const { user } = useAuth();
   const { userData } = useProfile();
-  const [isAdmin, setIsAdmin] = useState(false);
-  
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (user) {
-        const { data } = await supabase.rpc("has_role", {
-          _role: "admin",
-        });
-        setIsAdmin(!!data);
-      }
-    };
-    
-    checkAdminStatus();
-  }, [user]);
   
   // Prepare user data for Layout with proper avatar logic
   const layoutUser = userData ? {
@@ -55,18 +40,15 @@ const RepairPage = () => {
           </div>
           <Button onClick={() => setSubmissionDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Submit Repair Article
+            Submit Repair Recommendation
           </Button>
         </div>
         
         <KnowledgeNavigation />
         
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Community Repair Articles</h2>
-          <CategoryArticlesList 
-            category="Repair"
-            isAdmin={isAdmin} 
-          />
+          <h2 className="text-2xl font-semibold mb-4">Community Repair Recommendations</h2>
+          <CommunityRecommendationsList category="Repair" />
         </div>
         
         <div className="mb-8">
@@ -76,16 +58,15 @@ const RepairPage = () => {
             <h3 className="text-xl font-medium mb-2">Coming Soon</h3>
             <p className="text-muted-foreground mb-4 max-w-lg mx-auto">
               We're compiling a database of common Unimog repair issues and solutions.
-              In the meantime, check out the community articles above.
+              In the meantime, check out the community recommendations above.
             </p>
           </div>
         </div>
         
-        {/* Article Submission Dialog */}
-        <ArticleSubmissionDialog
+        {/* Recommendation Submission Dialog */}
+        <RecommendationSubmissionDialog
           open={submissionDialogOpen}
           onOpenChange={setSubmissionDialogOpen}
-          category="Repair"
         />
       </div>
     </Layout>
