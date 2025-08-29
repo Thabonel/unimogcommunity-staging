@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,7 @@ import { Waypoint } from '@/types/waypoint';
 import { DirectionsRoute } from '@/services/mapboxDirections';
 import { formatDistance, formatDuration } from '@/services/mapboxDirections';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase-client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SaveRouteModalProps {
   isOpen: boolean;
@@ -126,7 +125,6 @@ export function SaveRouteModal({
       return;
     }
 
-    console.log('🚀 Starting save process for route:', name.trim());
     setIsSaving(true);
 
     try {
@@ -134,31 +132,21 @@ export function SaveRouteModal({
 
       // Upload image if selected
       if (imageFile) {
-        console.log('📸 Uploading image...');
         const url = await uploadImageToSupabase(imageFile);
         if (url) {
           uploadedImageUrl = url;
-          console.log('✅ Image uploaded successfully:', url);
-        } else {
-          console.warn('⚠️ Image upload failed, continuing without image');
         }
       }
 
-      const saveData = {
+      // Save route with metadata
+      await onSave({
         name: name.trim(),
         description: description.trim(),
         difficulty,
         isPublic,
         imageUrl: uploadedImageUrl,
         notes: notes.trim()
-      };
-
-      console.log('💾 Calling onSave with data:', saveData);
-
-      // Save route with metadata
-      await onSave(saveData);
-
-      console.log('✅ Save completed successfully');
+      });
 
       // Reset form
       setName('');
@@ -171,16 +159,9 @@ export function SaveRouteModal({
 
       onClose();
     } catch (error) {
-      console.error('❌ Save error in modal:', error);
-      
-      // More detailed error handling
-      if (error instanceof Error) {
-        toast.error(`Failed to save route: ${error.message}`);
-      } else {
-        toast.error('Failed to save route - unknown error');
-      }
+      console.error('Save error:', error);
+      toast.error('Failed to save route');
     } finally {
-      console.log('🏁 Resetting saving state');
       setIsSaving(false);
     }
   };
@@ -200,16 +181,15 @@ export function SaveRouteModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
           <DialogTitle className="flex items-center">
             <Save className="mr-2 h-5 w-5" />
             Save Route
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 overflow-y-auto min-h-0 pr-4">
-          <div className="space-y-4 py-4 pb-6">
+        <div className="space-y-4 py-4">
           {/* Route Info Display */}
           {route && (
             <div className="bg-muted rounded-lg p-3 space-y-1">
@@ -312,7 +292,7 @@ export function SaveRouteModal({
                 className="flex-1"
               />
               {imageUrl && (
-                <div className="w-20 h-20 rounded overflow-hidden flex-shrink-0">
+                <div className="w-20 h-20 rounded overflow-hidden">
                   <img src={imageUrl} alt="Route preview" className="w-full h-full object-cover" />
                 </div>
               )}
@@ -320,8 +300,8 @@ export function SaveRouteModal({
           </div>
 
           {/* Public Toggle */}
-          <div className="flex items-center justify-between py-2">
-            <div className="space-y-0.5 flex-1">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
               <Label htmlFor="route-public">Share with Community</Label>
               <div className="text-sm text-muted-foreground">
                 Make this route visible to other users
@@ -331,13 +311,11 @@ export function SaveRouteModal({
               id="route-public"
               checked={isPublic}
               onCheckedChange={setIsPublic}
-              className="flex-shrink-0"
             />
           </div>
-          </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
