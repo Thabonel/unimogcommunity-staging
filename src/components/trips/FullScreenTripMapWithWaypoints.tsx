@@ -340,14 +340,16 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     };
   }, [mapLoaded]); // Only depend on mapLoaded
   
-  // Update cursor separately
+  // Update cursor for POI mode only (waypoint cursor is handled by the hook)
   useEffect(() => {
     if (mapRef.current && mapLoaded) {
       const canvas = mapRef.current.getCanvas();
       if (canvas) {
-        if (isAddingWaypoints || isAddingPOI) {
+        // Only handle POI cursor, let waypoint manager handle waypoint cursor
+        if (isAddingPOI) {
           canvas.style.cursor = 'crosshair';
-        } else {
+        } else if (!isAddingWaypoints) {
+          // Only reset if not in waypoint mode
           canvas.style.cursor = '';
         }
       }
