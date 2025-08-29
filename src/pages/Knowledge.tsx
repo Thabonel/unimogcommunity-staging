@@ -71,7 +71,7 @@ const Knowledge = () => {
                 User-recommended guides, tips, and experiences from fellow Unimog owners worldwide
               </p>
               <Button asChild className="w-full">
-                <Link to="/knowledge/recommendations">Browse Recommendations</Link>
+                <Link to="/knowledge/articles">Browse Recommendations</Link>
               </Button>
             </CardContent>
           </Card>

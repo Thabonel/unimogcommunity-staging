@@ -1,19 +1,34 @@
 
 // Import needed components
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { FileText, Settings } from 'lucide-react';
-import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
 import { RecommendationSubmissionDialog } from '@/components/knowledge/RecommendationSubmissionDialog';
+import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
 import { KnowledgeNavigation } from '@/components/knowledge/KnowledgeNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/profile';
+import { supabase } from '@/lib/supabase-client';
 
 const ModificationsPage = () => {
   const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
   const { user } = useAuth();
   const { userData } = useProfile();
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const { data } = await supabase.rpc("has_role", {
+          _role: "admin",
+        });
+        setIsAdmin(!!data);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
   
   // Prepare user data for Layout with proper avatar logic
   const layoutUser = userData ? {
@@ -49,7 +64,10 @@ const ModificationsPage = () => {
         
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Community Modification Recommendations</h2>
-          <CommunityRecommendationsList category="Modifications" />
+          <CommunityRecommendationsList 
+            category="modifications"
+            isAdmin={isAdmin} 
+          />
         </div>
         
         <div className="mb-8">
@@ -68,6 +86,7 @@ const ModificationsPage = () => {
         <RecommendationSubmissionDialog
           open={submissionDialogOpen}
           onOpenChange={setSubmissionDialogOpen}
+          category="modifications"
         />
       </div>
     </Layout>

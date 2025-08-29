@@ -1,19 +1,34 @@
 
 // Import needed components
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { FileText, Wrench } from 'lucide-react';
+import { KnowledgeNavigation } from '@/components/knowledge/KnowledgeNavigation';
 import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
 import { RecommendationSubmissionDialog } from '@/components/knowledge/RecommendationSubmissionDialog';
-import { KnowledgeNavigation } from '@/components/knowledge/KnowledgeNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/profile';
+import { supabase } from '@/lib/supabase-client';
 
 const MaintenancePage = () => {
+  const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
   const { user } = useAuth();
   const { userData } = useProfile();
-  const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        const { data } = await supabase.rpc("has_role", {
+          _role: "admin",
+        });
+        setIsAdmin(!!data);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
   
   // Prepare user data for Layout with proper avatar logic
   const layoutUser = userData ? {
@@ -46,12 +61,15 @@ const MaintenancePage = () => {
         </div>
         
         <KnowledgeNavigation />
-
+        
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Community Maintenance Recommendations</h2>
-          <CommunityRecommendationsList category="Maintenance" />
+          <CommunityRecommendationsList 
+            category="maintenance"
+            isAdmin={isAdmin} 
+          />
         </div>
-
+        
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Maintenance Schedules</h2>
           <div className="bg-muted rounded-lg p-8 text-center">
@@ -68,6 +86,7 @@ const MaintenancePage = () => {
         <RecommendationSubmissionDialog
           open={submissionDialogOpen}
           onOpenChange={setSubmissionDialogOpen}
+          category="maintenance"
         />
       </div>
     </Layout>
