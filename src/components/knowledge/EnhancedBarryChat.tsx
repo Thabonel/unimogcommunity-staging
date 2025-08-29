@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, RotateCw, Trash2, AlertCircle, LogIn, BookOpen, FileText, ChevronRight, Image as ImageIcon, ZoomIn, ZoomOut, Cpu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// Removed ScrollArea import - using native scrolling for better mouse wheel support
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,7 +31,8 @@ export function EnhancedBarryChat({ className, location, userModel }: EnhancedBa
   const [selectedDiagram, setSelectedDiagram] = useState<DiagramData | null>(null);
   const [activeTab, setActiveTab] = useState<string>('current');
   const [newDiagramAvailable, setNewDiagramAvailable] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const { 
@@ -47,12 +48,7 @@ export function EnhancedBarryChat({ className, location, userModel }: EnhancedBa
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-      }
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   // Load manual content when a reference is selected
@@ -219,8 +215,15 @@ export function EnhancedBarryChat({ className, location, userModel }: EnhancedBa
         </CardHeader>
         
         <CardContent className="flex-1 flex flex-col p-0">
-          {/* Messages Area */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+          {/* Messages Area with native scrolling for better mouse wheel support */}
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto p-4"
+            style={{ 
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             <div className="space-y-4">
               {messages.map((message, index) => (
                 <div
@@ -274,8 +277,10 @@ export function EnhancedBarryChat({ className, location, userModel }: EnhancedBa
                   </div>
                 </div>
               )}
+              {/* Scroll anchor for auto-scrolling to bottom */}
+              <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Manual References */}
           {manualReferences.length > 0 && (
