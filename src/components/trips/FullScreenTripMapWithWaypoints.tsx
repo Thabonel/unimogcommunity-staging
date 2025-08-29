@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Map, List, MapPin, Layers, Save, Car, Footprints, Bike, Trash2, Navigation, Share2, Wrench, Crosshair } from 'lucide-react';
+import { Plus, Map, List, MapPin, Layers, Save, Car, Footprints, Bike, Trash2, Navigation, Share2 } from 'lucide-react';
 import MapComponent from '../MapComponent';
-import MapOptionsDropdown from './map/MapOptionsDropdown';
 import { TripCardProps } from './TripCard';
 import { useMapMarkers } from './map/hooks/useMapMarkers';
 import { useUserLocation } from '@/hooks/use-user-location';
@@ -17,14 +15,6 @@ import { Waypoint } from '@/types/waypoint';
 import { SaveRouteModal, SaveRouteData } from './SaveRouteModal';
 import { AddPOIModal } from './AddPOIModal';
 import { getPOIsInBounds, POI_ICONS } from '@/services/poiService';
-import { searchPlaces, getCountryFromCoordinates } from '@/services/mapboxGeocoding';
-import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
-import { useWaypointManager } from '@/hooks/use-waypoint-manager';
-import { runCompleteDiagnostics } from '@/utils/mapbox-diagnostics';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { EnhancedBarryChat } from '../knowledge/EnhancedBarryChat';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
 
 // Map styles configuration
 const MAP_STYLES = {
@@ -39,87 +29,116 @@ interface FullScreenTripMapProps {
   onTripSelect: (trip: TripCardProps) => void;
   onCreateTrip: () => void;
   isLoading: boolean;
-  onTripsRefresh?: () => Promise<void>;
 }
 
 const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   trips,
   onTripSelect,
   onCreateTrip,
-  isLoading,
-  onTripsRefresh
+  isLoading
 }) => {
   const [activeTrip, setActiveTrip] = useState<string | null>(null);
   const [showList, setShowList] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [currentMapStyle, setCurrentMapStyle] = useState<string>(MAP_STYLES.OUTDOORS);
+  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+  const [isAddingWaypoints, setIsAddingWaypoints] = useState(false);
+  const [currentRoute, setCurrentRoute] = useState<DirectionsRoute | null>(null);
+  const [routeProfile, setRouteProfile] = useState<'driving' | 'walking' | 'cycling'>('driving');
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isAddingPOI, setIsAddingPOI] = useState(false);
   const [showPOIModal, setShowPOIModal] = useState(false);
   const [poiCoordinates, setPOICoordinates] = useState<[number, number] | null>(null);
   const [pois, setPOIs] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [userCountry, setUserCountry] = useState<string | null>(null);
-  const [searchMarkersRef] = useState<React.MutableRefObject<mapboxgl.Marker[]>>({ current: [] });
-  const [showBarryChat, setShowBarryChat] = useState(false);
-  const [userHasMovedMap, setUserHasMovedMap] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [shouldAutoCenter, setShouldAutoCenter] = useState(true);
-  const [hasInitiallyCentered, setHasInitiallyCentered] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const waypointMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const poiMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const routeLayerId = useRef<string>('route-layer');
   const clickListenerRef = useRef<((e: mapboxgl.MapMouseEvent) => void) | null>(null);
   
   const { location } = useUserLocation();
   const { user } = useAuth();
-
-  // Track map loaded state for waypoint manager
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   
-  // Use the waypoint manager for all waypoint operations
-  const waypointManager = useWaypointManager({ 
-    map: mapInstance,
-    onRouteUpdate: (waypoints) => {
-      console.log('Route updated with waypoints:', waypoints.length);
-    }
-  });
-  
-  const {
-    waypoints,
-    currentRoute, 
-    routeProfile,
-    isLoadingRoute,
-    isAddingMode: isAddingWaypoints,
-    setIsAddingMode: setIsAddingWaypoints,
-    setRouteProfile,
-    addWaypointAtLocation,
-    clearMarkers
-  } = waypointManager;
-
-  // Detect user's country from their location
-  useEffect(() => {
-    if (location && !userCountry) {
-      getCountryFromCoordinates(location.longitude, location.latitude)
-        .then(country => {
-          if (country) {
-            setUserCountry(country);
-            console.log('Detected user country:', country);
+  // Function to update waypoint labels
+  const updateWaypointLabels = useCallback(() => {
+    waypointMarkersRef.current.forEach((marker, index) => {
+      const element = marker.getElement();
+      if (element) {
+        const label = element.querySelector('.waypoint-label') as HTMLElement;
+        if (label) {
+          // First waypoint is A, last is B, middle ones are numbered
+          if (index === 0) {
+            label.textContent = 'A';
+          } else if (index === waypointMarkersRef.current.length - 1) {
+            label.textContent = 'B';
+          } else {
+            label.textContent = index.toString();
           }
-        })
-        .catch(error => {
-          console.error('Failed to detect country:', error);
+        }
+      }
+    });
+  }, []);
+  
+  // Function to fetch and display route
+  const fetchRoute = useCallback(async () => {
+    if (!mapRef.current || waypoints.length < 2) return;
+    
+    setIsLoadingRoute(true);
+    try {
+      const route = await getDirections(waypoints, routeProfile);
+      if (route) {
+        setCurrentRoute(route);
+        
+        // Remove existing route layer
+        if (mapRef.current.getLayer(routeLayerId.current)) {
+          mapRef.current.removeLayer(routeLayerId.current);
+        }
+        if (mapRef.current.getSource(routeLayerId.current)) {
+          mapRef.current.removeSource(routeLayerId.current);
+        }
+        
+        // Add new route
+        mapRef.current.addSource(routeLayerId.current, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: route.geometry
+          }
         });
+        
+        mapRef.current.addLayer({
+          id: routeLayerId.current,
+          type: 'line',
+          source: routeLayerId.current,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round'
+          },
+          paint: {
+            'line-color': '#00ff00',
+            'line-width': 4,
+            'line-opacity': 0.75
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching route:', error);
+      toast.error('Failed to calculate route');
+    } finally {
+      setIsLoadingRoute(false);
     }
-  }, [location, userCountry]);
+  }, [waypoints, routeProfile]);
   
-  
-  
+  // Update route when waypoints or profile changes
+  useEffect(() => {
+    if (waypoints.length >= 2) {
+      fetchRoute();
+    }
+  }, [waypoints, routeProfile, fetchRoute]);
   
   
   // Function to handle map load completion
@@ -127,47 +146,57 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     console.log('Map fully loaded');
     setMapLoaded(true);
     mapRef.current = map;
-    setMapInstance(map);
     
-    // Only auto-center once on initial load when location is available
-    if (location && !hasInitiallyCentered && shouldAutoCenter) {
-      console.log('Initial load: Centering map on user location:', location);
-      setTimeout(() => {
-        map.flyTo({
-          center: [location.longitude, location.latitude],
-          zoom: 12,
-          duration: 2500, // 2.5 second smooth animation
-          essential: true
-        });
-        setHasInitiallyCentered(true);
-        setShouldAutoCenter(false);
-      }, 1000); // Wait a bit longer for the map to settle
+    // Don't set up click handler here, do it in useEffect
+    
+    // Don't set cursor here, do it in a separate effect
+    
+    // Add user location marker if available
+    if (location) {
+      console.log('Centering map on user location:', location);
+      map.flyTo({
+        center: [location.longitude, location.latitude],
+        zoom: 10,
+        essential: true
+      });
+      
+      // Add user location marker
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+      }
+      
+      const el = document.createElement('div');
+      el.className = 'user-location-marker';
+      el.style.width = '20px';
+      el.style.height = '20px';
+      el.style.borderRadius = '50%';
+      el.style.backgroundColor = '#4F46E5';
+      el.style.border = '3px solid white';
+      el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+      
+      userMarkerRef.current = new mapboxgl.Marker(el)
+        .setLngLat([location.longitude, location.latitude])
+        .addTo(map);
     }
-    
-    // Set up map move listeners to detect user interaction
-    const handleMapMove = () => {
-      setUserHasMovedMap(true);
-      setShouldAutoCenter(false);
-    };
-    
-    // Listen for user-initiated map movements
-    map.on('dragstart', handleMapMove);
-    map.on('zoomstart', handleMapMove);
-    map.on('pitchstart', handleMapMove);
-    map.on('rotatestart', handleMapMove);
-    
-    // Note: User location is now handled by GeolocateControl in the map initialization
-    // The blue dot and compass functionality are provided by the built-in Mapbox control
-    console.log('🗺️ User location will be handled by GeolocateControl');
-  }, [location, hasInitiallyCentered, shouldAutoCenter]);
+  }, [location]);
   
   // Store refs for the current state values
+  const isAddingWaypointsRef = useRef(isAddingWaypoints);
   const isAddingPOIRef = useRef(isAddingPOI);
+  const waypointsRef = useRef(waypoints);
   
   // Update refs when values change
   useEffect(() => {
+    isAddingWaypointsRef.current = isAddingWaypoints;
+  }, [isAddingWaypoints]);
+  
+  useEffect(() => {
     isAddingPOIRef.current = isAddingPOI;
   }, [isAddingPOI]);
+  
+  useEffect(() => {
+    waypointsRef.current = waypoints;
+  }, [waypoints]);
   
   // Set up click listener ONCE after map loads
   useEffect(() => {
@@ -182,8 +211,63 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         return;
       }
       
-      // Waypoint handling is now managed by useWaypointManager
-      // The hook handles click events internally
+      // Use the ref to get current state for waypoints
+      if (!isAddingWaypointsRef.current || !mapRef.current) return;
+      
+      const currentWaypoints = waypointsRef.current;
+      const newWaypoint: Waypoint = {
+        id: Date.now().toString(),
+        coords: [e.lngLat.lng, e.lngLat.lat],
+        name: currentWaypoints.length === 0 ? 'A' : 'B',
+        type: 'waypoint'
+      };
+      
+      // Create custom marker element with label
+      const el = document.createElement('div');
+      el.className = 'waypoint-marker';
+      el.style.width = '30px';
+      el.style.height = '30px';
+      el.style.position = 'relative';
+      
+      // Create the pin
+      const pin = document.createElement('div');
+      pin.style.width = '100%';
+      pin.style.height = '100%';
+      pin.style.backgroundColor = '#FF0000';
+      pin.style.borderRadius = '50% 50% 50% 0';
+      pin.style.transform = 'rotate(-45deg)';
+      pin.style.border = '2px solid white';
+      pin.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      el.appendChild(pin);
+      
+      // Create the label
+      const label = document.createElement('div');
+      label.className = 'waypoint-label';
+      label.style.position = 'absolute';
+      label.style.top = '50%';
+      label.style.left = '50%';
+      label.style.transform = 'translate(-50%, -50%) rotate(45deg)';
+      label.style.color = 'white';
+      label.style.fontWeight = 'bold';
+      label.style.fontSize = '12px';
+      label.style.pointerEvents = 'none';
+      label.textContent = currentWaypoints.length === 0 ? 'A' : 'B';
+      pin.appendChild(label);
+      
+      // Add marker
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([e.lngLat.lng, e.lngLat.lat])
+        .addTo(mapRef.current!);
+      
+      waypointMarkersRef.current.push(marker);
+      setWaypoints(prev => {
+        const updated = [...prev, newWaypoint];
+        // Update all labels after adding new waypoint
+        setTimeout(() => updateWaypointLabels(), 0);
+        return updated;
+      });
+      
+      console.log('Added waypoint:', newWaypoint);
     };
     
     mapRef.current.on('click', handleClick);
@@ -194,7 +278,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         mapRef.current.off('click', clickListenerRef.current);
       }
     };
-  }, [mapLoaded]); // Only depend on mapLoaded
+  }, [mapLoaded, updateWaypointLabels]); // Only depend on mapLoaded, not on state values
   
   // Update cursor separately
   useEffect(() => {
@@ -241,7 +325,6 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   const toggleWaypointMode = () => {
     setIsAddingWaypoints(!isAddingWaypoints);
     setIsAddingPOI(false); // Disable POI mode
-    setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
     if (!isAddingWaypoints) {
       toast.info('Click on the map to add waypoints');
     }
@@ -278,10 +361,22 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     }
   };
 
-  // Clear all waypoints using waypoint manager
+  // Clear all waypoints
   const clearWaypoints = () => {
-    clearMarkers(); // Use waypoint manager's clear function
-    clearSearchResults(); // Also clear search results
+    waypointMarkersRef.current.forEach(marker => marker.remove());
+    waypointMarkersRef.current = [];
+    setWaypoints([]);
+    setCurrentRoute(null);
+    
+    // Remove route from map
+    if (mapRef.current) {
+      if (mapRef.current.getLayer(routeLayerId.current)) {
+        mapRef.current.removeLayer(routeLayerId.current);
+      }
+      if (mapRef.current.getSource(routeLayerId.current)) {
+        mapRef.current.removeSource(routeLayerId.current);
+      }
+    }
   };
 
   // Handle map style change
@@ -290,33 +385,25 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     setCurrentMapStyle(style);
     if (mapRef.current) {
       mapRef.current.setStyle(style);
-      // Re-add markers after style change
+      // Re-add markers and route after style change
       mapRef.current.once('style.load', () => {
+        // Re-add waypoint markers
+        waypointMarkersRef.current.forEach((marker, index) => {
+          if (waypoints[index]) {
+            marker.addTo(mapRef.current!);
+          }
+        });
         // Re-add user marker
         if (userMarkerRef.current) {
           userMarkerRef.current.addTo(mapRef.current!);
         }
-        // Waypoint manager handles its own markers and routes
-        // They will be automatically re-added by the manager
+        // Re-add route if exists
+        if (currentRoute && waypoints.length >= 2) {
+          fetchRoute();
+        }
       });
     }
-  }, []);
-
-  // Manual center on user location
-  const centerOnUserLocation = useCallback(() => {
-    if (mapRef.current && location) {
-      console.log('Manual centering on user location:', location);
-      mapRef.current.flyTo({
-        center: [location.longitude, location.latitude],
-        zoom: 12,
-        duration: 1500, // 1.5 second smooth animation
-        essential: true
-      });
-      toast.info('Centered on your location');
-    } else {
-      toast.error('Location not available');
-    }
-  }, [location]);
+  }, [waypoints, currentRoute, fetchRoute]);
   
   // Save route handler (basic save, opens modal)
   const handleSaveRoute = async () => {
@@ -336,21 +423,11 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   // Enhanced save route with metadata
   const handleSaveRouteWithData = async (data: SaveRouteData) => {
     if (!user) {
-      console.error('❌ No user found when trying to save route');
       toast.error('Please sign in to save routes');
       return;
     }
     
-    console.log('🗺️ handleSaveRouteWithData called with:', {
-      waypointCount: waypoints.length,
-      hasRoute: !!currentRoute,
-      userId: user.id,
-      routeProfile,
-      data
-    });
-
     try {
-      console.log('💾 Calling savePlannedRoute...');
       const savedTrack = await savePlannedRoute(
         waypoints,
         currentRoute,
@@ -359,45 +436,16 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         data
       );
       
-      console.log('📋 savePlannedRoute returned:', savedTrack);
-      
       if (savedTrack) {
-        console.log('✅ Route saved successfully, cleaning up...');
         clearWaypoints();
         setIsAddingWaypoints(false);
         toast.success(`Route "${data.name}" saved successfully!`);
-        
-        // Refresh trips list to show the new saved route
-        if (onTripsRefresh) {
-          console.log('🔄 Refreshing trips list...');
-          try {
-            await onTripsRefresh();
-            console.log('✅ Trips list refreshed');
-          } catch (refreshError) {
-            console.error('⚠️ Error refreshing trips list:', refreshError);
-            // Don't fail the whole operation for this
-          }
-        }
-        
-        // Close the save modal
-        setShowSaveModal(false);
-        console.log('🏁 Save process completed successfully');
-      } else {
-        console.error('❌ savePlannedRoute returned null/undefined');
-        toast.error('Failed to save route - no data returned');
+        // Reload trips to show the new saved route
+        window.location.reload();
       }
     } catch (error) {
-      console.error('❌ Save route error in handleSaveRouteWithData:', error);
-      
-      // More detailed error messages
-      if (error instanceof Error) {
-        toast.error(`Failed to save route: ${error.message}`);
-      } else {
-        toast.error('Failed to save route - unknown error');
-      }
-      
-      // Re-throw error so modal can handle it too
-      throw error;
+      console.error('Save route error:', error);
+      toast.error('Failed to save route');
     }
   };
 
@@ -418,220 +466,6 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     navigator.clipboard.writeText(routeInfo);
     toast.success('Route details copied to clipboard!');
   };
-
-  // Debug: Run routing diagnostics
-  const handleRunDiagnostics = async () => {
-    toast.info('Running Mapbox routing diagnostics...');
-    
-    const diagnosticWaypoints = waypoints.map(wp => ({
-      lng: wp.coords[0],
-      lat: wp.coords[1]
-    }));
-    
-    console.log('🔧 Manual diagnostics triggered with waypoints:', diagnosticWaypoints);
-    await runCompleteDiagnostics(diagnosticWaypoints);
-  };
-
-  // Debounced search for autocomplete
-  const debouncedSearch = useCallback(async (query: string) => {
-    if (!query.trim() || query.length < 2) {
-      setSearchResults([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      const results = await searchPlaces(query, {
-        limit: 5,
-        country: userCountry || undefined, // Filter by user's country
-        proximity: location ? [location.longitude, location.latitude] : undefined,
-        types: ['place', 'locality', 'address', 'poi']
-      });
-
-      if (results && results.length > 0) {
-        setSearchResults(results);
-        setShowSuggestions(true);
-      } else {
-        setSearchResults([]);
-        setShowSuggestions(false);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchResults([]);
-      setShowSuggestions(false);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [userCountry, location]);
-
-  // Handle search input change with debouncing
-  const handleSearchInputChange = useCallback((query: string) => {
-    setSearchQuery(query);
-    
-    // Clear previous timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    // Set new timeout for debounced search
-    if (query.trim().length >= 2) {
-      searchTimeoutRef.current = setTimeout(() => {
-        debouncedSearch(query);
-      }, 300); // 300ms delay
-    } else {
-      setSearchResults([]);
-      setShowSuggestions(false);
-    }
-  }, [debouncedSearch]);
-
-  // Add search result markers to map
-  const showSearchResultsOnMap = useCallback((results: any[]) => {
-    if (!mapRef.current) return;
-
-    // Clear existing search markers
-    searchMarkersRef.current.forEach(marker => marker.remove());
-    searchMarkersRef.current = [];
-    
-    // Add search result markers
-    results.forEach((result, index) => {
-      if (index < 5) { // Show max 5 results
-        const el = document.createElement('div');
-        el.className = 'search-result-marker';
-        el.style.width = '25px';
-        el.style.height = '25px';
-        el.style.backgroundColor = '#007cbf';
-        el.style.borderRadius = '50%';
-        el.style.border = '2px solid white';
-        el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-        el.style.cursor = 'pointer';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-        el.style.color = 'white';
-        el.style.fontSize = '12px';
-        el.style.fontWeight = 'bold';
-        el.textContent = (index + 1).toString();
-        
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([result.center[0], result.center[1]])
-          .addTo(mapRef.current!);
-        
-        // Add click handler to convert search result to waypoint
-        el.onclick = () => handleSearchResultClick(result);
-        
-        searchMarkersRef.current.push(marker);
-      }
-    });
-    
-    // Fit map to show all results
-    if (results.length === 1) {
-      mapRef.current.flyTo({
-        center: [results[0].center[0], results[0].center[1]],
-        zoom: 12,
-        essential: true
-      });
-    } else if (results.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds();
-      results.slice(0, 5).forEach(result => {
-        bounds.extend([result.center[0], result.center[1]]);
-      });
-      mapRef.current.fitBounds(bounds, { padding: 50 });
-    }
-  }, []);
-
-  // Handle clicking on search result (from dropdown or map pin)
-  const handleSearchResultClick = (result: any) => {
-    if (!mapRef.current) return;
-    
-    // Clear search results and markers
-    clearSearchResults();
-    
-    // Add waypoint using waypoint manager
-    addWaypointAtLocation({
-      lng: result.center[0],
-      lat: result.center[1]
-    });
-    
-    toast.success(`Added "${result.place_name}" as waypoint`);
-  };
-
-  // Handle selecting search result from dropdown
-  const handleSearchSuggestionSelect = (result: any) => {
-    // Just fill in the search box and show the result
-    setSearchQuery(result.place_name);
-    setShowSuggestions(false);
-    
-    // Add single marker without excessive map movements
-    if (!mapRef.current) return;
-    
-    // Clear existing search markers
-    searchMarkersRef.current.forEach(marker => marker.remove());
-    searchMarkersRef.current = [];
-    
-    // Add single result marker
-    const el = document.createElement('div');
-    el.className = 'search-result-marker';
-    el.style.width = '25px';
-    el.style.height = '25px';
-    el.style.backgroundColor = '#007cbf';
-    el.style.borderRadius = '50%';
-    el.style.border = '2px solid white';
-    el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-    el.style.cursor = 'pointer';
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.style.color = 'white';
-    el.style.fontSize = '12px';
-    el.style.fontWeight = 'bold';
-    el.textContent = '1';
-    
-    const marker = new mapboxgl.Marker(el)
-      .setLngLat([result.center[0], result.center[1]])
-      .addTo(mapRef.current);
-    
-    // Add click handler to convert search result to waypoint
-    el.onclick = () => handleSearchResultClick(result);
-    
-    searchMarkersRef.current.push(marker);
-    
-    // Gentle fly to location without aggressive zooming
-    mapRef.current.flyTo({
-      center: [result.center[0], result.center[1]],
-      zoom: Math.max(mapRef.current.getZoom(), 10), // Don't zoom out, only in if needed
-      essential: true
-    });
-  };
-
-  // Clear search results
-  const clearSearchResults = () => {
-    searchMarkersRef.current.forEach(marker => marker.remove());
-    searchMarkersRef.current = [];
-    setSearchResults([]);
-    setSearchQuery('');
-    setShowSuggestions(false);
-    
-    // Clear any pending search timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-  };
-
-  // Cleanup effect for component unmount
-  useEffect(() => {
-    return () => {
-      // Clear timeouts
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      
-      // Clean up search markers
-      searchMarkersRef.current.forEach(marker => marker.remove());
-      searchMarkersRef.current = [];
-    };
-  }, []);
 
   // Use the map markers hook
   const { updateMapMarkers, flyToTrip } = useMapMarkers(
@@ -654,108 +488,63 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   }, [trips, isLoading, mapLoaded, location, waypoints]);
 
   return (
-    <ErrorBoundary 
-      fallback={
-        <div className="h-full w-full flex items-center justify-center bg-gray-50">
-          <div className="text-center p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Trip Map Error</h2>
-            <p className="text-gray-600 mb-4">Unable to load the trip planning map. Please try refreshing the page.</p>
-            <Button onClick={() => window.location.reload()}>Refresh Map</Button>
-          </div>
-        </div>
-      }
-    >
-      <div className="h-full w-full relative">
-        {/* Map View */}
-        <div className="absolute inset-0">
-          <MapComponent 
-            height="100%" 
-            width="100%"
-            onMapLoad={handleMapLoad}
-            userLocation={location}
-            // Don't pass center prop to allow smart country-level initial view
-            // Exact location centering is handled in handleMapLoad with smooth transition
-            style={MAP_STYLES.OUTDOORS} // Keep initial style constant, use setStyle to change
-            hideControls={true}
-            shouldAutoCenter={shouldAutoCenter}
-          />
-        </div>
-
-      {/* Search Bar */}
-      <div className="absolute top-16 left-4 right-4 z-50">
-        <div className="max-w-md mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Search for places to add as waypoints..."
-              value={searchQuery}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              onFocus={() => {
-                if (searchResults.length > 0) {
-                  setShowSuggestions(true);
-                }
-              }}
-              onBlur={() => {
-                // Delay hiding suggestions to allow clicking on them
-                setTimeout(() => setShowSuggestions(false), 200);
-              }}
-              className="pl-10 pr-10 bg-white/95 backdrop-blur-sm border-gray-200 shadow-lg"
-              disabled={isSearching}
-            />
-            {searchQuery && (
-              <button
-                onClick={clearSearchResults}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-            {isSearching && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              </div>
-            )}
-          </div>
-          
-          {/* Search Results List */}
-          {showSuggestions && searchResults.length > 0 && (
-            <div className="mt-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-y-auto">
-              {searchResults.slice(0, 5).map((result, index) => (
-                <button
-                  key={result.id}
-                  onClick={() => handleSearchSuggestionSelect(result)}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent onBlur from firing before onClick
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center space-x-3"
-                >
-                  <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {result.text}
-                    </div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {result.place_name}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="h-full w-full relative">
+      {/* Map View */}
+      <div className="absolute inset-0">
+        <MapComponent 
+          height="100%" 
+          width="100%"
+          onMapLoad={handleMapLoad}
+          center={location ? [location.longitude, location.latitude] : undefined}
+          zoom={10}
+          style={MAP_STYLES.OUTDOORS} // Keep initial style constant, use setStyle to change
+          hideControls={true}
+        />
       </div>
 
       {/* Control Panel */}
-      <div className="absolute top-36 left-4 z-50">
-        <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-4 w-64 overflow-hidden">
-          {/* Map Options Dropdown */}
-          <div className="flex justify-center">
-            <MapOptionsDropdown 
-              map={mapRef}
-              currentMapStyle={currentMapStyle}
-              onStyleChange={handleStyleChange}
-            />
+      <div className="absolute top-4 left-4 z-50">
+        <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 space-y-4 w-64">
+          {/* Map Styles Section */}
+          <div>
+            <div className="text-sm font-medium mb-2 flex items-center">
+              <Layers className="h-4 w-4 mr-2" />
+              Map Styles
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <Button
+                size="sm"
+                variant={currentMapStyle === MAP_STYLES.OUTDOORS ? "default" : "outline"}
+                className="text-xs"
+                onClick={() => handleStyleChange(MAP_STYLES.OUTDOORS)}
+              >
+                Outdoors
+              </Button>
+              <Button
+                size="sm"
+                variant={currentMapStyle === MAP_STYLES.SATELLITE_STREETS ? "default" : "outline"}
+                className="text-xs"
+                onClick={() => handleStyleChange(MAP_STYLES.SATELLITE_STREETS)}
+              >
+                Satellite
+              </Button>
+              <Button
+                size="sm"
+                variant={currentMapStyle === MAP_STYLES.STREETS ? "default" : "outline"}
+                className="text-xs"
+                onClick={() => handleStyleChange(MAP_STYLES.STREETS)}
+              >
+                Streets
+              </Button>
+              <Button
+                size="sm"
+                variant={currentMapStyle === 'mapbox://styles/mapbox/outdoors-v11' ? "default" : "outline"}
+                className="text-xs"
+                onClick={() => handleStyleChange('mapbox://styles/mapbox/outdoors-v11')}
+              >
+                Terrain
+              </Button>
+            </div>
           </div>
 
           {/* Waypoint Controls */}
@@ -768,53 +557,33 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
             {/* Route Profile Selection */}
             {waypoints.length > 0 && (
               <div className="grid grid-cols-3 gap-1 mb-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant={routeProfile === 'driving' ? "default" : "outline"}
-                      className="text-xs px-2"
-                      onClick={() => setRouteProfile('driving')}
-                    >
-                      <Car className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Driving route</p>
-                  </TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant={routeProfile === 'walking' ? "default" : "outline"}
-                      className="text-xs px-2"
-                      onClick={() => setRouteProfile('walking')}
-                    >
-                      <Footprints className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Walking route</p>
-                  </TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant={routeProfile === 'cycling' ? "default" : "outline"}
-                      className="text-xs px-2"
-                      onClick={() => setRouteProfile('cycling')}
-                    >
-                      <Bike className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Cycling route</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Button
+                  size="sm"
+                  variant={routeProfile === 'driving' ? "default" : "outline"}
+                  className="text-xs px-2"
+                  onClick={() => setRouteProfile('driving')}
+                  title="Driving route"
+                >
+                  <Car className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={routeProfile === 'walking' ? "default" : "outline"}
+                  className="text-xs px-2"
+                  onClick={() => setRouteProfile('walking')}
+                  title="Walking route"
+                >
+                  <Footprints className="h-3 w-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={routeProfile === 'cycling' ? "default" : "outline"}
+                  className="text-xs px-2"
+                  onClick={() => setRouteProfile('cycling')}
+                  title="Cycling route"
+                >
+                  <Bike className="h-3 w-3" />
+                </Button>
               </div>
             )}
             
@@ -856,87 +625,42 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
                   )}
                   
                   <div className="flex gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs"
+                      onClick={clearWaypoints}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Clear
+                    </Button>
+                    {waypoints.length >= 2 && (
+                      <>
                         <Button
                           size="sm"
                           variant="outline"
                           className="flex-1 text-xs"
-                          onClick={clearWaypoints}
+                          onClick={handleShareRoute}
+                          disabled={isLoadingRoute || !user}
                         >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Clear
+                          <Share2 className="h-3 w-3 mr-1" />
+                          Share
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Clear all waypoints</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    
-                    {waypoints.length >= 2 && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 text-xs"
-                            onClick={handleShareRoute}
-                            disabled={isLoadingRoute || !user}
-                          >
-                            <Share2 className="h-3 w-3 mr-1" />
-                            Share
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{!user ? "Sign in to share" : "Share this route"}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                  
-                  {/* Save trip button */}
-                  {waypoints.length >= 2 && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
                         <Button
                           size="sm"
                           variant="default"
-                          className="w-full text-xs bg-primary hover:bg-primary/90"
+                          className="flex-1 text-xs"
                           onClick={handleSaveRoute}
                           disabled={isLoadingRoute || !user}
                         >
-                          <Save className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span className="truncate">Save Trip to List</span>
+                          <Save className="h-3 w-3 mr-1" />
+                          Save
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{!user ? "Sign in to save trips" : "Save this trip to your list"}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </>
               )}
-              
-              {/* Center on Location Button */}
-              <div className="pt-2 border-t">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full text-xs"
-                      onClick={centerOnUserLocation}
-                      disabled={!location}
-                    >
-                      <Crosshair className="h-3 w-3 mr-1" />
-                      Center on Me
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Center map on your location</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
             </div>
           </div>
         </div>
@@ -989,29 +713,15 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         </div>
       )}
 
-      {/* Barry AI Chat Button */}
-      <div className="absolute bottom-8 right-16 z-10">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => setShowBarryChat(true)}
-              size="lg"
-              className="rounded-full h-14 w-14 p-0 shadow-lg bg-unimog-500 hover:bg-unimog-600 border-2 border-white"
-            >
-              <div className="relative w-10 h-10">
-                <img
-                  src="/barry-avatar.png"
-                  alt="Barry"
-                  className="w-full h-full rounded-full object-cover"
-                />
-                <Wrench className="h-4 w-4 absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 text-unimog-500" />
-              </div>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            <p>Chat with Barry - AI Mechanic</p>
-          </TooltipContent>
-        </Tooltip>
+      {/* Create Trip Button */}
+      <div className="absolute bottom-8 right-8 z-10">
+        <Button
+          onClick={onCreateTrip}
+          size="lg"
+          className="rounded-full h-14 w-14 p-0 shadow-lg"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
       </div>
 
       {/* Save Route Modal */}
@@ -1031,37 +741,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         coordinates={poiCoordinates}
         onSave={handlePOISave}
       />
-
-      {/* Barry AI Chat Modal */}
-      <Dialog open={showBarryChat} onOpenChange={setShowBarryChat}>
-        <DialogContent className="max-w-4xl max-h-[85vh] p-0 flex flex-col">
-          <DialogHeader className="p-6 pb-0 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <img
-                  src="/barry-avatar.png"
-                  alt="Barry the AI Mechanic"
-                  className="w-12 h-12 rounded-full border-2 border-unimog-500"
-                />
-                <Wrench className="h-4 w-4 absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 text-unimog-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-unimog-800 dark:text-unimog-200">
-                  Barry - AI Mechanic with Manual Access
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Ask Barry about maintenance, repairs, or any technical questions about your Unimog
-                </p>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto min-h-0">
-            <EnhancedBarryChat className="h-full" location={location || undefined} />
-          </div>
-        </DialogContent>
-      </Dialog>
-      </div>
-    </ErrorBoundary>
+    </div>
   );
 };
 

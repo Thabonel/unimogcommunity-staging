@@ -11,9 +11,6 @@ export interface Waypoint {
   isLocked?: boolean;
   address?: string;
   elevation?: number;
-  isDraggable?: boolean;
-  bearing?: number; // Direction in degrees (0-360) for magnetic routing
-  snapRadius?: number; // Maximum distance in meters for road snapping
 }
 
 export interface ManualWaypoint {
@@ -30,8 +27,6 @@ export interface RouteOptions {
   avoidHighways?: boolean;
   avoidTolls?: boolean;
   includeTraffic?: boolean;
-  enableMagneticRouting?: boolean; // Enable road snapping and bearing controls
-  defaultSnapRadius?: number; // Default snapping radius in meters
 }
 
 export interface TripPlan {
