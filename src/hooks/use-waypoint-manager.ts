@@ -105,7 +105,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index + 1);
+        displayLabel = String(index);
       }
       
       switch (displayType) {
