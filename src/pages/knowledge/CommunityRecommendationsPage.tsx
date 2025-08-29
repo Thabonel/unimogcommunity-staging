@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
 import { RecommendationSubmissionDialog } from '@/components/knowledge/RecommendationSubmissionDialog';
+import { DatabaseDiagnostic } from '@/components/knowledge/DatabaseDiagnostic';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/profile';
 
@@ -56,6 +57,9 @@ const CommunityRecommendationsPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* Temporary diagnostic component */}
+        <DatabaseDiagnostic />
 
         <CommunityRecommendationsList category={category} />
       </div>
