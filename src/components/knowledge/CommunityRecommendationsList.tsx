@@ -7,15 +7,34 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface RecommendationData {
   id: string;
-  supplier_name: string;
-  category: string;
-  description: string;
-  location: string;
-  website_url?: string;
+  title: string;
+  content: string;
+  excerpt: string;
   author_id: string;
   author_name: string;
   author_avatar?: string;
-  created_at: string;
+  published_at: string;
+  category: string;
+  subcategory?: string;
+  tags?: string[];
+  
+  // Recommendation specific fields
+  recommendation_type?: string; // 'supplier', 'service', 'guide', 'tip'
+  business_name?: string;
+  location?: string;
+  contact_info?: any;
+  rating?: number;
+  price_range?: string;
+  
+  // Engagement metrics
+  likes: number;
+  views: number;
+  saves?: number;
+  
+  // Status
+  is_featured?: boolean;
+  is_verified?: boolean;
+  cover_image?: string;
 }
 
 interface CommunityRecommendationsListProps {
@@ -31,20 +50,25 @@ export function CommunityRecommendationsList({ category }: CommunityRecommendati
     const fetchRecommendations = async () => {
       setIsLoading(true);
       try {
+        // Start building query
         let query = supabase
           .from('community_recommendations')
           .select('*')
-          .order('created_at', { ascending: false });
-
-        if (category && category !== 'community') {
+          .eq('is_published', true)
+          .order('published_at', { ascending: false });
+        
+        // Filter by category if provided
+        if (category && category !== 'all') {
           query = query.eq('category', category);
         }
-
+        
         const { data, error } = await query;
-
-        if (error) throw error;
-
-        setRecommendations(data as RecommendationData[]);
+        
+        if (error) {
+          throw error;
+        }
+        
+        setRecommendations(data as RecommendationData[] || []);
       } catch (err) {
         console.error('Error fetching community recommendations:', err);
         setError('Failed to load recommendations. Please try again later.');
@@ -56,20 +80,26 @@ export function CommunityRecommendationsList({ category }: CommunityRecommendati
     fetchRecommendations();
   }, [category]);
 
+  // Render loading skeletons
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="space-y-3">
-            <Skeleton className="h-[160px] w-full" />
+            <Skeleton className="h-[200px] w-full" />
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-3 w-[100px]" />
+            </div>
           </div>
         ))}
       </div>
     );
   }
 
+  // Render error message
   if (error) {
     return (
       <Alert variant="destructive">
@@ -80,35 +110,47 @@ export function CommunityRecommendationsList({ category }: CommunityRecommendati
     );
   }
 
+  // Render empty state
   if (recommendations.length === 0) {
     return (
       <div className="text-center py-10">
         <h3 className="text-xl font-medium mb-2">No recommendations found</h3>
         <p className="text-muted-foreground">
-          {category
-            ? `There are no recommendations in the ${category} category yet.`
-            : 'There are no community recommendations yet.'}
+          {category && category !== 'all'
+            ? `There are no recommendations in the ${category} category yet.` 
+            : 'Be the first to share a recommendation with the community!'}
         </p>
       </div>
     );
   }
 
+  // Render recommendations list
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {recommendations.map((rec) => (
+      {recommendations.map((recommendation) => (
         <RecommendationCard
-          key={rec.id}
-          supplierName={rec.supplier_name}
-          category={rec.category}
-          description={rec.description}
-          location={rec.location}
-          websiteUrl={rec.website_url}
+          key={recommendation.id}
+          id={recommendation.id}
+          title={recommendation.title}
+          excerpt={recommendation.excerpt || recommendation.content.substring(0, 120) + '...'}
+          coverImage={recommendation.cover_image}
           author={{
-            id: rec.author_id,
-            name: rec.author_name,
-            avatarUrl: rec.author_avatar,
+            id: recommendation.author_id,
+            name: recommendation.author_name,
+            avatarUrl: recommendation.author_avatar,
           }}
-          createdAt={rec.created_at}
+          publishedAt={new Date(recommendation.published_at).toLocaleDateString()}
+          category={recommendation.category}
+          recommendationType={recommendation.recommendation_type}
+          businessName={recommendation.business_name}
+          location={recommendation.location}
+          rating={recommendation.rating}
+          likes={recommendation.likes}
+          views={recommendation.views}
+          saves={recommendation.saves}
+          isVerified={recommendation.is_verified}
+          isFeatured={recommendation.is_featured}
+          tags={recommendation.tags}
         />
       ))}
     </div>
