@@ -22,7 +22,7 @@ const SuspenseWrapper = ({ component: Component }: { component: React.ComponentT
 // Lazy load all knowledge pages with retry logic for production stability
 const Knowledge = lazyWithRetry(() => import('@/pages/Knowledge'));
 const { default: KnowledgeManuals } = lazyImportWithRetry(() => import('@/pages/KnowledgeManuals'), 'default');
-const { default: CommunityRecommendationsPage } = lazyImportWithRetry(() => import('@/pages/knowledge/CommunityArticlesPage'), 'default');
+const { default: CommunityRecommendationsPage } = lazyImportWithRetry(() => import('@/pages/knowledge/CommunityRecommendationsPage'), 'default');
 const { default: RepairPage } = lazyImportWithRetry(() => import('@/pages/knowledge/RepairPage'), 'default');
 const { default: MaintenancePage } = lazyImportWithRetry(() => import('@/pages/knowledge/MaintenancePage'), 'default');
 const { default: ModificationsPage } = lazyImportWithRetry(() => import('@/pages/knowledge/ModificationsPage'), 'default');
