@@ -65,24 +65,12 @@ export function CommunityRecommendationsList({ category }: CommunityRecommendati
         const { data, error } = await query;
         
         if (error) {
-          console.error('Supabase error:', error);
-          console.error('Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          });
           throw error;
         }
         
-        console.log('Fetched recommendations:', data);
         setRecommendations(data as RecommendationData[] || []);
       } catch (err) {
         console.error('Error fetching community recommendations:', err);
-        if (err instanceof Error) {
-          console.error('Error message:', err.message);
-          console.error('Full error:', err);
-        }
         setError('Failed to load recommendations. Please try again later.');
       } finally {
         setIsLoading(false);
