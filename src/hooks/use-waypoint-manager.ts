@@ -139,102 +139,123 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       
       switch (displayType) {
         case 'origin':
-          el.style.cssText = `
-            width: 32px;
-            height: 32px;
-            background: #10b981;
-            border: 3px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            cursor: pointer;
+          el.innerHTML = `
+            <div style="
+              width: 40px;
+              height: 40px;
+              background: #10b981;
+              border: 3px solid white;
+              border-radius: 50%;
+              box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 16px;
+              cursor: pointer;
+              position: relative;
+              z-index: 10;
+            ">${displayLabel}</div>
           `;
-          el.innerText = displayLabel;
           break;
         case 'destination':
-          el.style.cssText = `
-            width: 32px;
-            height: 32px;
-            background: #ef4444;
-            border: 3px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            cursor: pointer;
+          el.innerHTML = `
+            <div style="
+              width: 40px;
+              height: 40px;
+              background: #ef4444;
+              border: 3px solid white;
+              border-radius: 50%;
+              box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 16px;
+              cursor: pointer;
+              position: relative;
+              z-index: 10;
+            ">${displayLabel}</div>
           `;
-          el.innerText = displayLabel;
           break;
         case 'waypoint':
-          el.style.cssText = `
-            width: 24px;
-            height: 24px;
-            background: #3b82f6;
-            border: 2px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            cursor: pointer;
+          el.innerHTML = `
+            <div style="
+              width: 30px;
+              height: 30px;
+              background: #3b82f6;
+              border: 3px solid white;
+              border-radius: 50%;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 14px;
+              cursor: pointer;
+              position: relative;
+              z-index: 10;
+            ">${displayLabel}</div>
           `;
-          el.innerText = displayLabel;
           break;
         case 'manual':
-          el.style.cssText = `
-            width: 24px;
-            height: 24px;
-            background: #dc2626;
-            border: 2px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            cursor: pointer;
+          el.innerHTML = `
+            <div style="
+              width: 30px;
+              height: 30px;
+              background: #dc2626;
+              border: 3px solid white;
+              border-radius: 50%;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 14px;
+              cursor: pointer;
+              position: relative;
+              z-index: 10;
+            ">${String(index + 1)}</div>
           `;
-          el.innerText = String(index + 1);
           break;
       }
     } else {
       // Manual waypoint
-      el.style.cssText = `
-        width: 24px;
-        height: 24px;
-        background: #dc2626;
-        border: 2px solid white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        cursor: pointer;
+      el.innerHTML = `
+        <div style="
+          width: 30px;
+          height: 30px;
+          background: #dc2626;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 14px;
+          cursor: pointer;
+          position: relative;
+          z-index: 10;
+        ">${String(index + 1)}</div>
       `;
-      el.innerText = String(index + 1);
     }
 
     // Add click handler to remove waypoint (except origin/destination)
     if ('type' in waypoint && (waypoint.type === 'waypoint' || waypoint.type === 'manual')) {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        removeWaypoint(waypoint.id);
-      });
+      // Get the inner div element for the click handler
+      const innerDiv = el.firstElementChild as HTMLElement;
+      if (innerDiv) {
+        innerDiv.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeWaypoint(waypoint.id);
+        });
+      }
     }
 
     const marker = new mapboxgl.Marker({ element: el })
