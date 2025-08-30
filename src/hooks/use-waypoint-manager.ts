@@ -258,7 +258,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       }
     }
 
-    const marker = new mapboxgl.Marker({ element: el })
+    const marker = new mapboxgl.Marker(el)
       .setLngLat(coords)
       .addTo(map);
     
@@ -350,6 +350,14 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
   const drawRoute = useCallback((coordinates: [number, number][], isRoadFollowing: boolean = false) => {
     if (!map || coordinates.length < 2) return;
 
+    console.log('🛣️ Drawing route:', {
+      isRoadFollowing,
+      coordinateCount: coordinates.length,
+      firstCoord: coordinates[0],
+      lastCoord: coordinates[coordinates.length - 1],
+      sampleCoords: coordinates.slice(0, 3).map(c => `[${c[0].toFixed(4)}, ${c[1].toFixed(4)}]`)
+    });
+
     const routeData = {
       type: 'Feature' as const,
       properties: {},
@@ -428,11 +436,16 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         profile: routeProfile
       });
       
+      // Ensure we use 'driving' not 'driving-traffic' to avoid weird detours
+      const profile = routeProfile === 'driving-traffic' ? 'driving' : routeProfile;
+      
       const response = await getDirections(directionsWaypoints, {
-        profile: routeProfile,
+        profile: profile,
         geometries: 'geojson',
         steps: true,
-        overview: 'full'
+        overview: 'full',
+        alternatives: false,
+        continue_straight: false
       });
       
       console.log('Directions API response:', response);
@@ -444,7 +457,22 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         // Draw the road-following route
         if (route.geometry && route.geometry.coordinates) {
           console.log('Drawing road-following route with', route.geometry.coordinates.length, 'points');
-          drawRoute(route.geometry.coordinates, true);
+          
+          // Validate coordinates are [lng, lat] format
+          const validCoords = route.geometry.coordinates.filter((coord: any) => {
+            return Array.isArray(coord) && coord.length === 2 && 
+                   !isNaN(coord[0]) && !isNaN(coord[1]) &&
+                   Math.abs(coord[0]) <= 180 && Math.abs(coord[1]) <= 90;
+          });
+          
+          if (validCoords.length !== route.geometry.coordinates.length) {
+            console.warn('Some coordinates were invalid:', {
+              total: route.geometry.coordinates.length,
+              valid: validCoords.length
+            });
+          }
+          
+          drawRoute(validCoords, true);
           
           // Show route stats
           toast.success(
