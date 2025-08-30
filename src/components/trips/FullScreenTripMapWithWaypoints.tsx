@@ -424,6 +424,21 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     }
   };
 
+  // Clear search results
+  const clearSearchResults = () => {
+    searchMarkersRef.current.forEach(marker => marker.remove());
+    searchMarkersRef.current = [];
+    setSearchResults([]);
+    setSearchQuery('');
+    setShowSuggestions(false);
+    
+    // Clear any pending search timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+  };
+
   // Clear all waypoints using waypoint manager
   const clearWaypoints = () => {
     clearMarkers(); // Use waypoint manager's clear function
@@ -751,21 +766,6 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
       zoom: Math.max(mapRef.current.getZoom(), 10), // Don't zoom out, only in if needed
       essential: true
     });
-  };
-
-  // Clear search results
-  const clearSearchResults = () => {
-    searchMarkersRef.current.forEach(marker => marker.remove());
-    searchMarkersRef.current = [];
-    setSearchResults([]);
-    setSearchQuery('');
-    setShowSuggestions(false);
-    
-    // Clear any pending search timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
   };
 
   // Cleanup effect for component unmount

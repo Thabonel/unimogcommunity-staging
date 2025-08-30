@@ -41,11 +41,17 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       const canvas = map.getCanvas();
       if (canvas) {
         if (isAddingMode || isManualMode) {
+          console.log('🎯 Setting cursor to crosshair', { isAddingMode, isManualMode });
           canvas.style.cursor = 'crosshair';
         } else {
+          console.log('🎯 Resetting cursor to default');
           canvas.style.cursor = '';
         }
+      } else {
+        console.log('⚠️ Canvas not available for cursor change');
       }
+    } else {
+      console.log('⚠️ Map not available for cursor change');
     }
   }, [isAddingMode, isManualMode, map]);
 
@@ -105,8 +111,16 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index + 1);
+        displayLabel = String(index);  // Middle waypoints show their index number
       }
+      
+      console.log('📍 Creating marker:', { 
+        index, 
+        totalWaypoints, 
+        displayType, 
+        displayLabel,
+        waypointId: waypoint.id 
+      });
       
       switch (displayType) {
         case 'origin':
