@@ -340,21 +340,24 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     };
   }, [mapLoaded]); // Only depend on mapLoaded
   
-  // Update cursor for POI mode only (waypoint cursor is handled by the hook)
+  // Update cursor for POI mode only (waypoint cursor is handled by the hook and toggleWaypointMode)
   useEffect(() => {
     if (mapRef.current && mapLoaded) {
       const canvas = mapRef.current.getCanvas();
       if (canvas) {
-        // Only handle POI cursor, let waypoint manager handle waypoint cursor
+        // Only handle POI cursor
         if (isAddingPOI) {
           canvas.style.cursor = 'crosshair';
+          canvas.style.setProperty('cursor', 'crosshair', 'important');
         } else if (!isAddingWaypoints) {
-          // Only reset if not in waypoint mode
+          // Only reset if not in any adding mode
           canvas.style.cursor = '';
+          canvas.style.removeProperty('cursor');
         }
+        // If in waypoint mode, the cursor is handled by toggleWaypointMode and the hook
       }
     }
-  }, [mapLoaded, isAddingWaypoints, isAddingPOI]);
+  }, [mapLoaded, isAddingPOI]); // Remove isAddingWaypoints dependency to avoid conflicts
   
   // Handle trip click in the list
   const handleTripClick = (trip: TripCardProps) => {
@@ -385,10 +388,25 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
 
   // Toggle waypoint adding mode
   const toggleWaypointMode = () => {
-    setIsAddingWaypoints(!isAddingWaypoints);
+    const newMode = !isAddingWaypoints;
+    setIsAddingWaypoints(newMode);
     setIsAddingPOI(false); // Disable POI mode
     setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
-    if (!isAddingWaypoints) {
+    
+    // Immediately update cursor
+    if (mapRef.current && mapLoaded) {
+      const canvas = mapRef.current.getCanvas();
+      if (canvas) {
+        if (newMode) {
+          canvas.style.cursor = 'crosshair';
+          canvas.style.setProperty('cursor', 'crosshair', 'important');
+          toast.info('Click on the map to add waypoints');
+        } else {
+          canvas.style.cursor = '';
+          canvas.style.removeProperty('cursor');
+        }
+      }
+    } else if (newMode) {
       toast.info('Click on the map to add waypoints');
     }
   };
