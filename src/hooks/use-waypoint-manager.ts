@@ -126,7 +126,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index);  // Middle waypoints show their index number
+        displayLabel = String(index + 1);  // Middle waypoints show position number (2, 3, 4...)
       }
       
       console.log('📍 Creating marker:', { 
