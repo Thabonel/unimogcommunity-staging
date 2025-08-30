@@ -240,6 +240,13 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     const marker = new mapboxgl.Marker({ element: el })
       .setLngLat(coords)
       .addTo(map);
+    
+    console.log('🎯 Marker created and added to map:', {
+      coords,
+      displayLabel,
+      displayType,
+      markerId: waypoint.id
+    });
 
     return marker;
   }, [map]);
@@ -455,7 +462,12 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
 
   // Update route when waypoints change
   useEffect(() => {
-    if (!map) return;
+    if (!map) {
+      console.log('⚠️ Map not available for updating markers');
+      return;
+    }
+
+    console.log('🔄 Updating markers, waypoints:', waypoints.length);
 
     // Clear existing markers
     markersRef.current.forEach(marker => marker.remove());
@@ -466,6 +478,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       const marker = addWaypointMarker(waypoint, index, waypoints.length);
       if (marker) {
         markersRef.current.push(marker);
+        console.log(`✅ Added marker ${index + 1}/${waypoints.length}`);
       }
     });
 
@@ -528,18 +541,20 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       const { isAddingMode: addMode, isManualMode: manualMode } = modesRef.current;
       const shouldAddWaypoint = addMode || manualMode;
       
-      console.log('Map clicked!', {
-        coords: e.lngLat,
+      console.log('🗺️ Map clicked!', {
+        coords: [e.lngLat.lng, e.lngLat.lat],
         addMode,
         manualMode,
-        shouldAdd: shouldAddWaypoint
+        shouldAdd: shouldAddWaypoint,
+        currentWaypointCount: waypoints.length
       });
       
       if (!shouldAddWaypoint) {
-        console.log('Not in adding mode, ignoring click');
+        console.log('❌ Not in adding mode, ignoring click');
         return;
       }
       
+      console.log('✅ Adding waypoint at location:', e.lngLat);
       addWaypointAtLocation(e.lngLat);
     };
 
