@@ -93,7 +93,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     
     // Determine actual type based on position for regular waypoints
     let displayType = 'waypoint';
-    let displayLabel = String(index);
+    let displayLabel = String(index + 1);
     
     if ('type' in waypoint) {
       // For regular waypoints, determine type by position
@@ -105,7 +105,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index);
+        displayLabel = String(index + 1);
       }
       
       switch (displayType) {
