@@ -17,7 +17,7 @@ const CommunityRecommendationsPage = () => {
   
   // Extract category from URL path
   const pathParts = location.pathname.split('/');
-  const category = pathParts[pathParts.length - 1] === 'articles' ? undefined : pathParts[pathParts.length - 1];
+  const category = pathParts[pathParts.length - 1] === 'recommendations' ? undefined : pathParts[pathParts.length - 1];
   
   const layoutUser = userData ? {
     name: userData.name || user?.email?.split('@')[0] || 'User',
@@ -69,7 +69,7 @@ const CommunityRecommendationsPage = () => {
             <Button
               variant={!category ? "default" : "outline"}
               size="sm"
-              onClick={() => navigate('/knowledge/articles')}
+              onClick={() => navigate('/knowledge/recommendations')}
             >
               All Recommendations
             </Button>
