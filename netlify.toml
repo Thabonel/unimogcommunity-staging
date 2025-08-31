@@ -5,7 +5,7 @@
   base = "/"
   
   # Build command - install all dependencies including devDependencies and build
-  command = "npm ci --include=dev && npm run build"
+  command = "npm ci && npm run build"
   
   # Directory containing the built site
   publish = "dist"

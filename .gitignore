@@ -30,6 +30,7 @@ dist-ssr
 # Security files
 SECURITY-REMINDER.md
 # Removed files with exposed credentials
-*.json
+# Don't ignore all JSON files - we need package-lock.json
+# *.json
 claude-desktop-config.json
 claude-config-updated.json
