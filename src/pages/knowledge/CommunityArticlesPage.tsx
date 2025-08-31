@@ -1,18 +1,23 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BookOpen } from 'lucide-react';
-import { CommunityArticlesList } from '@/components/knowledge/CommunityArticlesList';
-import { ArticleSubmissionDialog } from '@/components/knowledge/ArticleSubmissionDialog';
+import { ArrowLeft, Plus, Lightbulb } from 'lucide-react';
+import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
+import { RecommendationSubmissionDialog } from '@/components/knowledge/RecommendationSubmissionDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/profile';
 
-const CommunityArticlesPage = () => {
+const CommunityRecommendationsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [submissionDialogOpen, setSubmissionDialogOpen] = useState(false);
   const { user } = useAuth();
   const { userData } = useProfile();
+  
+  // Extract category from URL path
+  const pathParts = location.pathname.split('/');
+  const category = pathParts[pathParts.length - 1] === 'articles' ? undefined : pathParts[pathParts.length - 1];
   
   const layoutUser = userData ? {
     name: userData.name || user?.email?.split('@')[0] || 'User',
@@ -40,10 +45,10 @@ const CommunityArticlesPage = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-unimog-800 dark:text-unimog-200 mb-2">
-              Community Articles
+              Community Recommendations
             </h1>
             <p className="text-muted-foreground max-w-2xl">
-              Browse guides, tips, and experiences shared by fellow Unimog owners from around the world.
+              Discover suppliers, services, and tips recommended by fellow Unimog owners worldwide.
             </p>
           </div>
           <div className="flex gap-2">
@@ -51,18 +56,67 @@ const CommunityArticlesPage = () => {
               className="bg-primary"
               onClick={() => setSubmissionDialogOpen(true)}
             >
-              <BookOpen size={16} className="mr-2" />
-              New Article
+              <Plus size={16} className="mr-2" />
+              New Recommendation
             </Button>
           </div>
         </div>
 
-        {/* Community Articles List Component */}
-        <CommunityArticlesList />
+        {/* Category Navigation */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-3">Browse by Category</h2>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={!category ? "default" : "outline"}
+              size="sm"
+              onClick={() => navigate('/knowledge/articles')}
+            >
+              All Recommendations
+            </Button>
+            <Button
+              variant={category === 'repair' ? "default" : "outline"}
+              size="sm"
+              onClick={() => navigate('/knowledge/repair')}
+            >
+              Repair
+            </Button>
+            <Button
+              variant={category === 'maintenance' ? "default" : "outline"}
+              size="sm"
+              onClick={() => navigate('/knowledge/maintenance')}
+            >
+              Maintenance
+            </Button>
+            <Button
+              variant={category === 'modifications' ? "default" : "outline"}
+              size="sm"
+              onClick={() => navigate('/knowledge/modifications')}
+            >
+              Modifications
+            </Button>
+            <Button
+              variant={category === 'tyres' ? "default" : "outline"}
+              size="sm"
+              onClick={() => navigate('/knowledge/tyres')}
+            >
+              Tyres
+            </Button>
+            <Button
+              variant={category === 'adventures' ? "default" : "outline"}
+              size="sm"
+              onClick={() => navigate('/knowledge/adventures')}
+            >
+              Adventures
+            </Button>
+          </div>
+        </div>
+
+        {/* Community Recommendations List Component */}
+        <CommunityRecommendationsList category={category} />
       </div>
 
-      {/* Article Submission Dialog */}
-      <ArticleSubmissionDialog 
+      {/* Recommendation Submission Dialog */}
+      <RecommendationSubmissionDialog 
         open={submissionDialogOpen} 
         onOpenChange={setSubmissionDialogOpen} 
       />
@@ -70,4 +124,4 @@ const CommunityArticlesPage = () => {
   );
 };
 
-export default CommunityArticlesPage;
+export default CommunityRecommendationsPage;
