@@ -30,7 +30,7 @@ const retryImport = (importFn: () => Promise<any>) => {
 };
 
 const AnalyticsDashboard = lazy(() => retryImport(() => import("@/components/admin/AnalyticsDashboard")));
-const ArticlesManagement = lazy(() => retryImport(() => import("@/components/admin/ArticlesManagement")));
+const RecommendationsManagement = lazy(() => retryImport(() => import("@/components/admin/RecommendationsManagement")));
 const ManualProcessingPage = lazy(() => retryImport(() => import("@/pages/admin/ManualProcessingPage")));
 const UsersManagement = lazy(() => retryImport(() => import("@/components/admin/UsersManagement")));
 const SiteConfiguration = lazy(() => retryImport(() => import("@/components/admin/SiteConfiguration")));
@@ -38,7 +38,7 @@ const SiteConfiguration = lazy(() => retryImport(() => import("@/components/admi
 // Define admin tabs with icons for best practices
 const adminTabs = [
   { id: "analytics", label: "Analytics" },
-  { id: "articles", label: "Articles" },
+  { id: "recommendations", label: "Recommendations" },
   { id: "manuals", label: "Manuals" },
   { id: "users", label: "Users" },
   { id: "settings", label: "Settings" }
@@ -48,7 +48,7 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const { isAdmin, isLoading, error } = useAdminStatus(user);
   const { toast } = useToast();
-  const [currentSection, setCurrentSection] = useState("articles"); // Default to articles section
+  const [currentSection, setCurrentSection] = useState("recommendations"); // Default to recommendations section
   
   useEffect(() => {
     logger.debug('Admin Dashboard rendered', { 
@@ -86,10 +86,10 @@ const AdminDashboard = () => {
               </LazyLoadErrorBoundary>
             </TabsContent>
             
-            <TabsContent value="articles" className="space-y-4">
-              <LazyLoadErrorBoundary section="Articles">
+            <TabsContent value="recommendations" className="space-y-4">
+              <LazyLoadErrorBoundary section="Recommendations">
                 <Suspense fallback={<LoadingState />}>
-                  <ArticlesManagement />
+                  <RecommendationsManagement />
                 </Suspense>
               </LazyLoadErrorBoundary>
             </TabsContent>

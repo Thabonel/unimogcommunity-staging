@@ -16,6 +16,7 @@ export function AdminNavigation({ tabs }: AdminNavigationProps) {
       case "analytics":
         return <BarChart3 className="h-4 w-4 mr-2" />;
       case "articles":
+      case "recommendations":
         return <FileText className="h-4 w-4 mr-2" />;
       case "manuals":
         return <Book className="h-4 w-4 mr-2" />;
