@@ -17,9 +17,9 @@ export function KnowledgeNavigation() {
   return (
     <div className="mt-2 mb-6">
       <div className="flex items-center overflow-x-auto pb-2 no-scrollbar">
-        <NavLink to="/knowledge/articles" className={getLinkClass('/knowledge/articles')}>
+        <NavLink to="/knowledge/recommendations" className={getLinkClass('/knowledge/recommendations')}>
           <BookOpen className="h-4 w-4" />
-          <span>All Articles</span>
+          <span>Community Recommendations</span>
         </NavLink>
         
         <Separator orientation="vertical" className="h-6 mx-2" />

@@ -111,7 +111,14 @@ export function SecureBarryChat({ height = "600px", className }: SecureBarryChat
       </div>
 
       {/* Messages Area */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+      <ScrollArea 
+        ref={scrollAreaRef} 
+        className="flex-1 p-4"
+        onWheel={(e) => {
+          // Ensure mouse wheel scrolling works properly
+          e.stopPropagation();
+        }}
+      >
         <div className="space-y-4">
           {messages.map((message, index) => (
             <div

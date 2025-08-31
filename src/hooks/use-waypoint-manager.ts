@@ -93,7 +93,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     
     // Determine actual type based on position for regular waypoints
     let displayType = 'waypoint';
-    let displayLabel = String(index + 1);
+    let displayLabel = String(index);  // Default to index for middle waypoints
     
     if ('type' in waypoint) {
       // For regular waypoints, determine type by position
@@ -105,7 +105,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index + 1);
+        displayLabel = String(index);  // Show 2, 3, 4... for middle waypoints
       }
       
       switch (displayType) {
@@ -177,7 +177,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             cursor: pointer;
           `;
-          el.innerText = String(index + 1);
+          el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
           break;
       }
     } else {
@@ -197,7 +197,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         cursor: pointer;
       `;
-      el.innerText = String(index + 1);
+      el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
     }
 
     // Add click handler to remove waypoint (except origin/destination)
@@ -208,7 +208,10 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       });
     }
 
-    const marker = new mapboxgl.Marker({ element: el })
+    const marker = new mapboxgl.Marker({ 
+      element: el,
+      anchor: 'center'  // Ensure marker is centered at click position
+    })
       .setLngLat(coords)
       .addTo(map);
 
