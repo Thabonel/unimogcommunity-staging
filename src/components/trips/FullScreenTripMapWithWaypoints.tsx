@@ -117,8 +117,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     setRouteProfile,
     addWaypointAtLocation,
     clearMarkers,
-    loadTrackWaypoints,
-    updateCursor
+    loadTrackWaypoints
   } = waypointManager;
 
   // Fetch user tracks on mount

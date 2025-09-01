@@ -657,7 +657,6 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     clearMarkers,
     drawRoute,
     loadTrackWaypoints,
-    fetchDirections,
-    updateCursor
+    fetchDirections
   };
 }
