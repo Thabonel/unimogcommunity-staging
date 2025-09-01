@@ -123,7 +123,8 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     setRouteProfile,
     addWaypointAtLocation,
     clearMarkers,
-    loadTrackWaypoints
+    loadTrackWaypoints,
+    updateCursor
   } = waypointManager;
 
   // Fetch user tracks on mount
@@ -471,10 +472,33 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
 
   // Toggle waypoint adding mode
   const toggleWaypointMode = () => {
-    setIsAddingWaypoints(!isAddingWaypoints);
+    const newMode = !isAddingWaypoints;
+    setIsAddingWaypoints(newMode);
     setIsAddingPOI(false); // Disable POI mode
     setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
-    if (!isAddingWaypoints) {
+    
+    // Force cursor update immediately and directly
+    if (mapRef.current) {
+      const canvas = mapRef.current.getCanvas();
+      if (canvas) {
+        if (newMode) {
+          console.log('🎯 Directly setting cursor to crosshair on button click');
+          canvas.style.cursor = 'crosshair';
+          canvas.style.setProperty('cursor', 'crosshair', 'important');
+        } else {
+          console.log('🎯 Directly resetting cursor on button click');
+          canvas.style.cursor = '';
+          canvas.style.removeProperty('cursor');
+        }
+      }
+    }
+    
+    // Also call the hook's updateCursor
+    setTimeout(() => {
+      updateCursor();
+    }, 10);
+    
+    if (newMode) {
       toast.info('Click on the map to add waypoints');
     }
   };

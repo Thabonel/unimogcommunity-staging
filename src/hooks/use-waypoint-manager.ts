@@ -35,21 +35,67 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     mapRef.current = map;
   }, [map]);
   
-  useEffect(() => {
-    modesRef.current = { isAddingMode, isManualMode };
-    
-    // Update cursor when modes change
+  // Function to update cursor immediately
+  const updateCursor = useCallback(() => {
     if (map) {
       const canvas = map.getCanvas();
       if (canvas) {
         if (isAddingMode || isManualMode || isAddingPOI) {
+          console.log('🎯 Setting cursor to crosshair');
           canvas.style.cursor = 'crosshair';
+          // Force cursor update by setting it multiple times with delays
+          // This ensures it overrides any other cursor styles
+          setTimeout(() => {
+            if (map && map.getCanvas()) {
+              map.getCanvas().style.cursor = 'crosshair';
+              // Also set important to override any conflicting styles
+              map.getCanvas().style.setProperty('cursor', 'crosshair', 'important');
+            }
+          }, 10);
+          setTimeout(() => {
+            if (map && map.getCanvas()) {
+              map.getCanvas().style.cursor = 'crosshair';
+            }
+          }, 50);
+          setTimeout(() => {
+            if (map && map.getCanvas()) {
+              map.getCanvas().style.cursor = 'crosshair';
+            }
+          }, 100);
         } else {
+          console.log('🎯 Resetting cursor to default');
           canvas.style.cursor = '';
+          canvas.style.removeProperty('cursor');
         }
       }
     }
-  }, [isAddingMode, isManualMode, isAddingPOI, map]);
+  }, [map, isAddingMode, isManualMode, isAddingPOI]);
+
+  useEffect(() => {
+    modesRef.current = { isAddingMode, isManualMode };
+    
+    // Update cursor when modes change
+    updateCursor();
+    
+    // Add mousemove listener to maintain cursor while in waypoint mode
+    const handleMouseMove = () => {
+      if ((isAddingMode || isManualMode || isAddingPOI) && map) {
+        const canvas = map.getCanvas();
+        if (canvas && canvas.style.cursor !== 'crosshair') {
+          console.log('🎯 Maintaining crosshair cursor on mouse move');
+          canvas.style.cursor = 'crosshair';
+        }
+      }
+    };
+    
+    if (map && (isAddingMode || isManualMode || isAddingPOI)) {
+      map.on('mousemove', handleMouseMove);
+      
+      return () => {
+        map.off('mousemove', handleMouseMove);
+      };
+    }
+  }, [isAddingMode, isManualMode, isAddingPOI, updateCursor, map]);
 
   // Reverse geocode coordinates to get place name
   const reverseGeocode = async (coords: [number, number]): Promise<string> => {
@@ -642,6 +688,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     clearMarkers,
     drawRoute,
     loadTrackWaypoints,
-    fetchDirections
+    fetchDirections,
+    updateCursor
   };
 }
