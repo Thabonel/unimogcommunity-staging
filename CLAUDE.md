@@ -716,3 +716,27 @@ The Unimog Community Hub is now **fully functional and production-ready** with r
 - Feature additions only upon explicit user request
 
 Remember: **If it's not broken, don't fix it!**
+
+## 🚨 Critical Build Issues to Avoid
+
+### Platform-Specific Package Issues (Added 2025-09-01)
+**NEVER install platform-specific packages that break cross-platform builds:**
+- ❌ NEVER: `npm install @rollup/rollup-darwin-x64` (breaks Linux/Netlify builds)
+- ❌ NEVER: Add any `darwin`, `win32`, or platform-specific packages manually
+- ✅ CORRECT: Let npm/yarn resolve platform dependencies automatically
+- ✅ CORRECT: Use `npm install` without specific platform packages
+
+**If rollup or build issues occur locally:**
+1. Remove node_modules and package-lock.json
+2. Run `npm install` (NOT npm ci)
+3. Let npm resolve correct platform dependencies
+4. NEVER manually add platform-specific packages to package.json
+
+### Community Recommendations Field Mappings (Added 2025-09-01)
+**Database fields vs Component props - use these exact names:**
+- Database: `is_published` → Component: `is_published` (NOT is_approved)
+- Database: `likes_count` → Component: `likes_count` (NOT likes)
+- Database: `views_count` → Component: `views_count` (NOT views)
+- Database: `saves_count` → Component: `saves_count` (NOT saves)
+
+**Always check existing database schema before changing field names!**
