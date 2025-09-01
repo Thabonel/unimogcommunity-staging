@@ -56,8 +56,24 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
             if ((isAddingMode || isManualMode) && canvas.style.cursor !== 'crosshair') {
               console.log('🎯 Force-setting cursor to crosshair (was:', canvas.style.cursor, ')');
               canvas.style.cursor = 'crosshair';
+              canvas.style.setProperty('cursor', 'crosshair', 'important');
             }
           }, 100);
+          
+          // Keep checking and forcing crosshair while mode is active
+          const cursorInterval = setInterval(() => {
+            if (isAddingMode || isManualMode) {
+              const currentCursor = canvas.style.cursor;
+              if (currentCursor !== 'crosshair') {
+                console.log('🎯 Cursor was changed to:', currentCursor, '- forcing back to crosshair');
+                canvas.style.setProperty('cursor', 'crosshair', 'important');
+              }
+            } else {
+              clearInterval(cursorInterval);
+            }
+          }, 250);
+          
+          return () => clearInterval(cursorInterval);
         } else {
           console.log('🎯 Resetting cursor to default');
           canvas.style.cursor = '';
@@ -122,8 +138,16 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index + 1);  // Show 2, 3, 4... for middle waypoints (index+1)
+        displayLabel = String(index);  // Show 2, 3, 4... for middle waypoints (just index for 2,3,4)
       }
+      
+      console.log('🎯 Creating marker:', {
+        index,
+        totalWaypoints,
+        displayType,
+        displayLabel,
+        waypointType: waypoint.type
+      });
       
       switch (displayType) {
         case 'origin':
@@ -281,15 +305,24 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       // Add regular waypoint
       setWaypoints(prev => {
         const order = prev.length;
-        let waypointType: 'origin' | 'destination' | 'waypoint' = 'waypoint';
         
-        // First waypoint is origin, last could be destination
+        // When adding 3rd+ waypoint, we need to update the previous last waypoint
+        // from 'destination' to 'waypoint' 
+        const updatedPrev = prev.map((wp, idx) => {
+          if (idx === prev.length - 1 && prev.length > 0 && order > 1) {
+            // Change the previous last waypoint from destination to waypoint
+            return { ...wp, type: 'waypoint' as const };
+          }
+          return wp;
+        });
+        
+        // New waypoint is always destination if there are any existing waypoints
+        let waypointType: 'origin' | 'destination' | 'waypoint' = 'waypoint';
         if (order === 0) {
           waypointType = 'origin';
-        } else if (order === 1) {
-          waypointType = 'destination';
         } else {
-          waypointType = 'waypoint';
+          // Any waypoint after the first is initially the destination
+          waypointType = 'destination';
         }
         
         const newWaypoint: Waypoint = {
@@ -301,9 +334,10 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
           address: placeName
         };
         
-        const updated = [...prev, newWaypoint];
+        const updated = [...updatedPrev, newWaypoint];
         toast.success(`Waypoint ${updated.length} added`);
         console.log('Added regular waypoint:', newWaypoint);
+        console.log('Updated waypoints:', updated.map(w => ({ order: w.order, type: w.type })));
         return updated;
       });
     }
