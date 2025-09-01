@@ -35,37 +35,28 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     mapRef.current = map;
   }, [map]);
   
-  // Function to update cursor immediately
+  // Function to update cursor immediately using proper Mapbox pattern
   const updateCursor = useCallback(() => {
     if (map) {
       const canvas = map.getCanvas();
       if (canvas) {
         if (isAddingMode || isManualMode || isAddingPOI) {
-          console.log('🎯 Setting cursor to crosshair');
+          console.log('🎯 Setting cursor to crosshair (waypoint mode active)');
+          // Use proper Mapbox pattern - direct DOM manipulation
           canvas.style.cursor = 'crosshair';
-          // Force cursor update by setting it multiple times with delays
-          // This ensures it overrides any other cursor styles
-          setTimeout(() => {
-            if (map && map.getCanvas()) {
-              map.getCanvas().style.cursor = 'crosshair';
-              // Also set important to override any conflicting styles
-              map.getCanvas().style.setProperty('cursor', 'crosshair', 'important');
+          // Override any existing styles immediately
+          canvas.style.setProperty('cursor', 'crosshair', 'important');
+          
+          // Double-check after next frame to ensure it sticks
+          requestAnimationFrame(() => {
+            if (canvas) {
+              canvas.style.cursor = 'crosshair';
             }
-          }, 10);
-          setTimeout(() => {
-            if (map && map.getCanvas()) {
-              map.getCanvas().style.cursor = 'crosshair';
-            }
-          }, 50);
-          setTimeout(() => {
-            if (map && map.getCanvas()) {
-              map.getCanvas().style.cursor = 'crosshair';
-            }
-          }, 100);
+          });
         } else {
           console.log('🎯 Resetting cursor to default');
-          canvas.style.cursor = '';
           canvas.style.removeProperty('cursor');
+          canvas.style.cursor = '';
         }
       }
     }
@@ -76,26 +67,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     
     // Update cursor when modes change
     updateCursor();
-    
-    // Add mousemove listener to maintain cursor while in waypoint mode
-    const handleMouseMove = () => {
-      if ((isAddingMode || isManualMode || isAddingPOI) && map) {
-        const canvas = map.getCanvas();
-        if (canvas && canvas.style.cursor !== 'crosshair') {
-          console.log('🎯 Maintaining crosshair cursor on mouse move');
-          canvas.style.cursor = 'crosshair';
-        }
-      }
-    };
-    
-    if (map && (isAddingMode || isManualMode || isAddingPOI)) {
-      map.on('mousemove', handleMouseMove);
-      
-      return () => {
-        map.off('mousemove', handleMouseMove);
-      };
-    }
-  }, [isAddingMode, isManualMode, isAddingPOI, updateCursor, map]);
+  }, [isAddingMode, isManualMode, isAddingPOI, updateCursor]);
 
   // Reverse geocode coordinates to get place name
   const reverseGeocode = async (coords: [number, number]): Promise<string> => {
@@ -153,7 +125,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index);  // Show 2, 3, 4... for middle waypoints
+        displayLabel = String(index + 1);  // Show 2, 3, 4... for middle waypoints (index+1)
       }
       
       switch (displayType) {
@@ -344,12 +316,32 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
   const drawRoute = useCallback((coordinates: [number, number][], isRoadFollowing: boolean = false) => {
     if (!map || coordinates.length < 2) return;
 
+    // Validate coordinates to prevent crazy lines
+    const validCoordinates = coordinates.filter(coord => {
+      const [lng, lat] = coord;
+      return (
+        typeof lng === 'number' && 
+        typeof lat === 'number' && 
+        !isNaN(lng) && 
+        !isNaN(lat) && 
+        lng >= -180 && lng <= 180 && 
+        lat >= -90 && lat <= 90
+      );
+    });
+
+    if (validCoordinates.length < 2) {
+      console.warn('Not enough valid coordinates for route', { original: coordinates.length, valid: validCoordinates.length });
+      return;
+    }
+
+    console.log(`Drawing route: ${validCoordinates.length} points, road-following: ${isRoadFollowing}`);
+
     const routeData = {
       type: 'Feature' as const,
       properties: {},
       geometry: {
         type: 'LineString' as const,
-        coordinates
+        coordinates: validCoordinates
       }
     };
 
@@ -573,13 +565,18 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
       addWaypointAtLocation(e.lngLat);
     };
 
-    // Set up click handler
+    // Set up click handler with proper cleanup
     const setupHandler = () => {
-      // Remove any existing handler first
+      // Remove any existing handler first to prevent duplicates
       map.off('click', handleMapClick);
-      // Add the click handler
-      map.on('click', handleMapClick);
-      console.log('✅ Click handler registered successfully');
+      
+      // Add the click handler only if map is ready
+      if (map.loaded()) {
+        map.on('click', handleMapClick);
+        console.log('✅ Click handler registered successfully');
+      } else {
+        console.warn('Map not loaded, skipping click handler setup');
+      }
     };
 
     // Check if map is ready

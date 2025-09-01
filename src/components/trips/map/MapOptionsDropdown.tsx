@@ -771,7 +771,13 @@ export default function MapOptionsDropdown({
             });
             
             map.current.on('mouseleave', layerId, () => {
-              if (map.current) map.current.getCanvas().style.cursor = '';
+              if (map.current) {
+                // Don't reset cursor if we're in waypoint mode (crosshair should persist)
+                const canvas = map.current.getCanvas();
+                if (canvas.style.cursor !== 'crosshair') {
+                  canvas.style.cursor = '';
+                }
+              }
             });
           }
         }
@@ -987,7 +993,13 @@ export default function MapOptionsDropdown({
               });
               
               map.current.on('mouseleave', layerId, () => {
-                if (map.current) map.current.getCanvas().style.cursor = '';
+                if (map.current) {
+                  // Don't reset cursor if we're in waypoint mode (crosshair should persist)
+                  const canvas = map.current.getCanvas();
+                  if (canvas.style.cursor !== 'crosshair') {
+                    canvas.style.cursor = '';
+                  }
+                }
               });
             }
             break;
