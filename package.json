@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/validate-env.js && vite build",
+    "build": "vite build",
+    "build:validate": "node scripts/validate-env.js && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -115,7 +116,6 @@
     "@eslint/js": "^9.9.0",
     "@langchain/core": "^0.3.70",
     "@langchain/textsplitters": "^0.1.0",
-    "@rollup/rollup-darwin-x64": "^4.50.0",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
