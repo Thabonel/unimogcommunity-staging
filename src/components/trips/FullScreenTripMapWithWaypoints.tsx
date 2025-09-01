@@ -104,12 +104,6 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     map: mapInstance,
     onRouteUpdate: (waypoints) => {
       console.log('Route updated with waypoints:', waypoints.length);
-    },
-    isAddingPOI,
-    onPOIClick: (coordinates) => {
-      setPOICoordinates(coordinates);
-      setShowPOIModal(true);
-      setIsAddingPOI(false);
     }
   });
   
@@ -479,11 +473,6 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     setIsAddingPOI(false); // Disable POI mode
     setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
     
-    // Immediately call updateCursor which will handle the cursor properly
-    setTimeout(() => {
-      updateCursor();
-    }, 0);
-    
     if (newMode) {
       toast.info('Click on the map to add waypoints (A-2-3-B)');
     }
@@ -497,6 +486,40 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
       toast.info('Click on the map to add a Point of Interest');
     }
   };
+
+  // Handle POI clicks and cursor separately from waypoint clicks
+  useEffect(() => {
+    if (!mapInstance) return;
+
+    // Set cursor for POI mode
+    const canvas = mapInstance.getCanvas();
+    if (canvas) {
+      if (isAddingPOI && !isAddingWaypoints) {
+        canvas.style.cursor = 'crosshair';
+      } else if (!isAddingWaypoints) {
+        // Only reset cursor if waypoints aren't active (they handle their own cursor)
+        canvas.style.cursor = '';
+      }
+    }
+
+    if (!isAddingPOI) return;
+
+    const handlePOIClick = (e: mapboxgl.MapMouseEvent) => {
+      if (isAddingPOI && !isAddingWaypoints) {
+        setPOICoordinates([e.lngLat.lng, e.lngLat.lat]);
+        setShowPOIModal(true);
+        setIsAddingPOI(false);
+      }
+    };
+
+    mapInstance.on('click', handlePOIClick);
+
+    return () => {
+      if (mapInstance) {
+        mapInstance.off('click', handlePOIClick);
+      }
+    };
+  }, [mapInstance, isAddingPOI, isAddingWaypoints]);
 
   // Handle POI save
   const handlePOISave = (poi: any) => {

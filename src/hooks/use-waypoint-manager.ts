@@ -7,11 +7,9 @@ import { getDirections, formatDistance, formatDuration, DirectionsRoute } from '
 interface WaypointManagerProps {
   map: mapboxgl.Map | null;
   onRouteUpdate?: (waypoints: Waypoint[]) => void;
-  isAddingPOI?: boolean;
-  onPOIClick?: (coordinates: [number, number]) => void;
 }
 
-export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, onPOIClick }: WaypointManagerProps) {
+export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [manualWaypoints, setManualWaypoints] = useState<ManualWaypoint[]>([]);
   const [origin, setOrigin] = useState<Waypoint | null>(null);
@@ -35,39 +33,21 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     mapRef.current = map;
   }, [map]);
   
-  // Function to update cursor immediately using proper Mapbox pattern
-  const updateCursor = useCallback(() => {
+  useEffect(() => {
+    modesRef.current = { isAddingMode, isManualMode };
+    
+    // Update cursor when modes change - simple working version
     if (map) {
       const canvas = map.getCanvas();
       if (canvas) {
-        if (isAddingMode || isManualMode || isAddingPOI) {
-          console.log('🎯 Setting cursor to crosshair (waypoint mode active)');
-          // Use proper Mapbox pattern - direct DOM manipulation
+        if (isAddingMode || isManualMode) {
           canvas.style.cursor = 'crosshair';
-          // Override any existing styles immediately
-          canvas.style.setProperty('cursor', 'crosshair', 'important');
-          
-          // Double-check after next frame to ensure it sticks
-          requestAnimationFrame(() => {
-            if (canvas) {
-              canvas.style.cursor = 'crosshair';
-            }
-          });
         } else {
-          console.log('🎯 Resetting cursor to default');
-          canvas.style.removeProperty('cursor');
           canvas.style.cursor = '';
         }
       }
     }
-  }, [map, isAddingMode, isManualMode, isAddingPOI]);
-
-  useEffect(() => {
-    modesRef.current = { isAddingMode, isManualMode };
-    
-    // Update cursor when modes change
-    updateCursor();
-  }, [isAddingMode, isManualMode, isAddingPOI, updateCursor]);
+  }, [isAddingMode, isManualMode, map]);
 
   // Reverse geocode coordinates to get place name
   const reverseGeocode = async (coords: [number, number]): Promise<string> => {
@@ -113,7 +93,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     
     // Determine actual type based on position for regular waypoints
     let displayType = 'waypoint';
-    let displayLabel = String(index);  // Default to index for middle waypoints
+    let displayLabel = String(index + 1);  // Default for middle waypoints
     
     if ('type' in waypoint) {
       // For regular waypoints, determine type by position
@@ -538,13 +518,6 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
     console.log('Setting up waypoint click handler, map loaded:', map.loaded());
 
     const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
-      // Check if we're in POI mode first
-      if (isAddingPOI && onPOIClick) {
-        console.log('POI mode click:', e.lngLat);
-        onPOIClick([e.lngLat.lng, e.lngLat.lat]);
-        return;
-      }
-      
       // Use ref to get current mode values for waypoints
       const { isAddingMode: addMode, isManualMode: manualMode } = modesRef.current;
       const shouldAddWaypoint = addMode || manualMode;
@@ -553,7 +526,6 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
         coords: e.lngLat,
         addMode,
         manualMode,
-        isAddingPOI,
         shouldAdd: shouldAddWaypoint
       });
       
@@ -610,7 +582,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, on
         map.off('click', handleMapClick);
       }
     };
-  }, [map, addWaypointAtLocation, isAddingPOI, onPOIClick]);
+  }, [map, addWaypointAtLocation]);
 
   // Load waypoints from an existing track
   const loadTrackWaypoints = useCallback((track: any) => {
