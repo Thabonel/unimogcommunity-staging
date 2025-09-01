@@ -584,6 +584,26 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     };
   }, [map, addWaypointAtLocation]);
 
+  // Clear all waypoints
+  const clearWaypoints = useCallback(() => {
+    clearMarkers();
+    setWaypoints([]);
+    setManualWaypoints([]);
+    setOrigin(null);
+    setDestination(null);
+    
+    // Clear route layer
+    if (map) {
+      if (map.getLayer(routeLayerRef.current)) {
+        map.removeLayer(routeLayerRef.current);
+      }
+      if (map.getSource(routeLayerRef.current)) {
+        map.removeSource(routeLayerRef.current);
+      }
+    }
+    setCurrentRoute(null);
+  }, [map, clearMarkers]);
+
   // Load waypoints from an existing track
   const loadTrackWaypoints = useCallback((track: any) => {
     if (!track || !track.data) return;
@@ -655,6 +675,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     addWaypointAtLocation,
     removeWaypoint,
     clearMarkers,
+    clearWaypoints,
     drawRoute,
     loadTrackWaypoints,
     fetchDirections

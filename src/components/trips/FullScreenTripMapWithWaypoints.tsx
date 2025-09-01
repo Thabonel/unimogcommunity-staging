@@ -117,6 +117,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     setRouteProfile,
     addWaypointAtLocation,
     clearMarkers,
+    clearWaypoints: clearWaypointsFromHook,
     loadTrackWaypoints
   } = waypointManager;
 
@@ -468,7 +469,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     const newMode = !isAddingWaypoints;
     console.log('🎯 Toggling waypoint mode:', newMode ? 'ON' : 'OFF');
     
-    setIsAddingWaypoints(newMode);
+    setIsAddingWaypoints(newMode);  // This calls the hook's setIsAddingMode
     setIsAddingPOI(false); // Disable POI mode
     setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
     
@@ -544,7 +545,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
 
   // Clear all waypoints using waypoint manager
   const clearWaypoints = () => {
-    clearMarkers(); // Use waypoint manager's clear function
+    clearWaypointsFromHook(); // Use waypoint manager's clear function
     clearSearchResults(); // Also clear search results
   };
 
