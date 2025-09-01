@@ -105,7 +105,8 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     map: mapInstance,
     onRouteUpdate: (waypoints) => {
       console.log('Route updated with waypoints:', waypoints.length);
-    }
+    },
+    isAddingPOI
   });
   
   const {
@@ -444,19 +445,8 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     };
   }, [mapLoaded]); // Only depend on mapLoaded
   
-  // Update cursor separately
-  useEffect(() => {
-    if (mapRef.current && mapLoaded) {
-      const canvas = mapRef.current.getCanvas();
-      if (canvas) {
-        if (isAddingWaypoints || isAddingPOI) {
-          canvas.style.cursor = 'crosshair';
-        } else {
-          canvas.style.cursor = '';
-        }
-      }
-    }
-  }, [mapLoaded, isAddingWaypoints, isAddingPOI]);
+  // Note: Cursor changes are now handled exclusively by the waypoint manager
+  // to prevent race conditions between multiple cursor handlers
   
   // Handle trip click in the list
   const handleTripClick = (trip: TripCardProps) => {

@@ -7,9 +7,10 @@ import { getDirections, formatDistance, formatDuration, DirectionsRoute } from '
 interface WaypointManagerProps {
   map: mapboxgl.Map | null;
   onRouteUpdate?: (waypoints: Waypoint[]) => void;
+  isAddingPOI?: boolean;
 }
 
-export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps) {
+export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false }: WaypointManagerProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [manualWaypoints, setManualWaypoints] = useState<ManualWaypoint[]>([]);
   const [origin, setOrigin] = useState<Waypoint | null>(null);
@@ -40,14 +41,14 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     if (map) {
       const canvas = map.getCanvas();
       if (canvas) {
-        if (isAddingMode || isManualMode) {
+        if (isAddingMode || isManualMode || isAddingPOI) {
           canvas.style.cursor = 'crosshair';
         } else {
           canvas.style.cursor = '';
         }
       }
     }
-  }, [isAddingMode, isManualMode, map]);
+  }, [isAddingMode, isManualMode, isAddingPOI, map]);
 
   // Reverse geocode coordinates to get place name
   const reverseGeocode = async (coords: [number, number]): Promise<string> => {
