@@ -90,29 +90,10 @@ export function useRecommendations() {
 
   const deleteRecommendation = async (recommendationId: string) => {
     try {
-      // First, check if recommendation has an image to delete
-      const { data: recommendationData } = await supabase
-        .from("community_recommendations")
-        .select("cover_image, title, category")
-        .eq("id", recommendationId)
-        .single();
+      console.log("Attempting to delete recommendation with ID:", recommendationId);
       
-      if (!recommendationData) {
-        throw new Error("Recommendation not found");
-      }
-      
-      // If recommendation has a cover image, delete it from storage
-      if (recommendationData?.cover_image) {
-        const filePath = recommendationData.cover_image.split('/').pop();
-        if (filePath) {
-          await supabase
-            .storage
-            .from('recommendations')
-            .remove([filePath]);
-        }
-      }
-
-      // Then delete the recommendation
+      // Simply delete the recommendation without worrying about storage
+      // Storage bucket for recommendations might not exist yet
       const { error } = await supabase
         .from("community_recommendations")
         .delete()
@@ -120,9 +101,15 @@ export function useRecommendations() {
 
       if (error) {
         console.error("Error deleting recommendation:", error);
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         toast({
           title: "Error deleting recommendation",
-          description: "Failed to delete the recommendation. Please try again.",
+          description: error.message || "Failed to delete the recommendation. Please try again.",
           variant: "destructive",
         });
         return false;
