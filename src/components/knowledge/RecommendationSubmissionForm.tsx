@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface RecommendationSubmissionFormProps {
   onSuccess: () => void;
@@ -37,6 +37,7 @@ export function RecommendationSubmissionForm({
   defaultCategory = 'general' 
 }: RecommendationSubmissionFormProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   

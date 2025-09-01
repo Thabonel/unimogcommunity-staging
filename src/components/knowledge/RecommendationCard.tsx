@@ -15,7 +15,7 @@ import {
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface RecommendationCardProps {
   id: string;
@@ -61,6 +61,7 @@ const RecommendationCard = ({
   tags
 }: RecommendationCardProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [likes, setLikes] = useState(initialLikes);
   const [saves, setSaves] = useState(initialSaves || 0);
   const [hasLiked, setHasLiked] = useState(false);
