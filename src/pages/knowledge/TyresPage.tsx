@@ -56,7 +56,7 @@ const TyresPage = () => {
           <div>
             <Button onClick={() => setSubmissionDialogOpen(true)}>
               <FileText className="mr-2 h-4 w-4" />
-              Submit Tyre Article
+              Submit Tyre Recommendation
             </Button>
           </div>
         </div>
@@ -64,7 +64,7 @@ const TyresPage = () => {
         <KnowledgeNavigation />
         
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Community Tyre Articles</h2>
+          <h2 className="text-2xl font-semibold mb-4">Community Tyre Recommendations</h2>
           <CategoryArticlesList 
             category="Tyres" 
             isAdmin={isAdmin}

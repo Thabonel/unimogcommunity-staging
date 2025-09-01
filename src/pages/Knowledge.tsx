@@ -53,7 +53,7 @@ const Knowledge = () => {
               onClick={() => setSubmissionDialogOpen(true)}
             >
               <BookOpen size={16} className="mr-2" />
-              New Article
+              New Recommendation
             </Button>
           </div>
         </div>

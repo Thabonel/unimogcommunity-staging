@@ -55,14 +55,14 @@ const AdventuresPage = () => {
           </div>
           <Button onClick={() => setSubmissionDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Submit Adventure Article
+            Submit Adventure Story
           </Button>
         </div>
         
         <KnowledgeNavigation />
         
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Community Adventure Articles</h2>
+          <h2 className="text-2xl font-semibold mb-4">Community Adventure Stories</h2>
           <CategoryArticlesList 
             category="Adventures"
             isAdmin={isAdmin}

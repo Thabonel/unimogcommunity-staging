@@ -55,14 +55,14 @@ const RepairPage = () => {
           </div>
           <Button onClick={() => setSubmissionDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Submit Repair Article
+            Submit Repair Recommendation
           </Button>
         </div>
         
         <KnowledgeNavigation />
         
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Community Repair Articles</h2>
+          <h2 className="text-2xl font-semibold mb-4">Community Repair Recommendations</h2>
           <CategoryArticlesList 
             category="Repair"
             isAdmin={isAdmin} 

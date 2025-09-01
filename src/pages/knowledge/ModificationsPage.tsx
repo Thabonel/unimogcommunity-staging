@@ -56,14 +56,14 @@ const ModificationsPage = () => {
           </div>
           <Button onClick={() => setSubmissionDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Submit Modification Article
+            Submit Modification Recommendation
           </Button>
         </div>
         
         <KnowledgeNavigation />
         
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Community Modification Articles</h2>
+          <h2 className="text-2xl font-semibold mb-4">Community Modification Recommendations</h2>
           <CategoryArticlesList 
             category="Modifications"
             isAdmin={isAdmin} 
