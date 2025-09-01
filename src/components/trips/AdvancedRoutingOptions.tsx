@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Info, Mountain, TreePine, Road } from 'lucide-react';
+import { Info, Mountain, TreePine, Car, Truck, Bike, Footprints } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AdvancedRoutingOptionsProps {
@@ -62,7 +62,7 @@ export const AdvancedRoutingOptions: React.FC<AdvancedRoutingOptionsProps> = ({
             <SelectContent>
               <SelectItem value="driving">
                 <div className="flex items-center gap-2">
-                  <Road className="h-3 w-3" />
+                  <Car className="h-3 w-3" />
                   <span>Standard Driving</span>
                 </div>
               </SelectItem>
@@ -188,6 +188,3 @@ export const AdvancedRoutingOptions: React.FC<AdvancedRoutingOptionsProps> = ({
     </Card>
   );
 };
-
-// Import required icons
-import { Car, Truck, Bike, Footprints } from 'lucide-react';
