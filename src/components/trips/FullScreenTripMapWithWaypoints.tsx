@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Map, List, MapPin, Layers, Save, Car, Footprints, Bike, Trash2, Navigation, Share2, Wrench, Crosshair } from 'lucide-react';
+import { Plus, Map, List, MapPin, Layers, Save, Car, Footprints, Bike, Trash2, Navigation, Share2, Wrench, Crosshair, Upload, FileUp, Mountain } from 'lucide-react';
 import MapComponent from '../MapComponent';
 import MapOptionsDropdown from './map/MapOptionsDropdown';
 import { TripCardProps } from './TripCard';
@@ -24,7 +24,9 @@ import { useWaypointManager } from '@/hooks/use-waypoint-manager';
 import { runCompleteDiagnostics } from '@/utils/mapbox-diagnostics';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { EnhancedBarryChat } from '../knowledge/EnhancedBarryChat';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { parseGPXFile, GPXParseResult } from '@/utils/gpxUtils';
+import { ElevationProfile } from './ElevationProfile';
 
 // Map styles configuration
 const MAP_STYLES = {
@@ -72,7 +74,12 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   const [userTracks, setUserTracks] = useState<any[]>([]);
   const [loadedTracks, setLoadedTracks] = useState<Map<string, any>>(new window.Map());
   const [isLoadingTracks, setIsLoadingTracks] = useState(false);
+  const [showGPXUpload, setShowGPXUpload] = useState(false);
+  const [uploadedGPXTracks, setUploadedGPXTracks] = useState<any[]>([]);
+  const [showElevationProfile, setShowElevationProfile] = useState(false);
+  const [activeTrackElevation, setActiveTrackElevation] = useState<any>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
@@ -129,12 +136,88 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     }
   };
 
+  // Handle GPX file upload
+  const handleGPXUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const result = await parseGPXFile(file);
+      console.log('Parsed GPX:', result);
+      
+      if (result.tracks.length === 0 && result.waypoints.length === 0) {
+        toast.error('No tracks or waypoints found in GPX file');
+        return;
+      }
+
+      // Add tracks to uploaded list
+      const newTracks = result.tracks.map((track, index) => ({
+        id: `gpx-upload-${Date.now()}-${index}`,
+        name: track.name || file.name.replace('.gpx', ''),
+        type: 'uploaded' as const,
+        visible: true,
+        data: track,
+        segments: {
+          points: track.trackPoints.map(p => ({
+            lat: p.lat,
+            lon: p.lon,
+            elevation: p.elevation
+          })),
+          bounds: track.bounds,
+          waypoints: track.waypoints
+        },
+        distance_km: track.distance / 1000,
+        metadata: {
+          elevation: track.elevation,
+          duration: track.duration,
+          ...result.metadata
+        }
+      }));
+
+      setUploadedGPXTracks(prev => [...prev, ...newTracks]);
+      
+      // Load first track to map
+      if (newTracks.length > 0 && loadTrackWaypoints) {
+        loadTrackWaypoints(newTracks[0]);
+        if (mapRef.current && newTracks[0].segments?.bounds) {
+          const { north, south, east, west } = newTracks[0].segments.bounds;
+          mapRef.current.fitBounds(
+            [[west, south], [east, north]],
+            { padding: 50, duration: 1000 }
+          );
+        }
+        
+        // Set elevation data if available
+        if (newTracks[0].metadata?.elevation) {
+          setActiveTrackElevation({
+            points: newTracks[0].segments.points,
+            elevationData: newTracks[0].metadata.elevation,
+            totalDistance: newTracks[0].distance_km
+          });
+          setShowElevationProfile(true);
+        }
+      }
+
+      toast.success(`Loaded ${result.tracks.length} track(s) from GPX file`);
+      setShowGPXUpload(false);
+    } catch (error) {
+      console.error('Error parsing GPX:', error);
+      toast.error('Failed to parse GPX file');
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Handle track toggle - load/unload track on map
   const handleTrackToggle = async (trackId: string) => {
     console.log('Toggling track:', trackId);
     
-    // Find the track data
-    const track = userTracks.find(t => t.id === trackId);
+    // Find the track data - check both saved and uploaded tracks
+    const track = userTracks.find(t => t.id === trackId) || 
+                 uploadedGPXTracks.find(t => t.id === trackId);
     if (!track) {
       console.error('Track not found:', trackId);
       return;
@@ -172,6 +255,19 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         loadedTracks.set(trackId, track);
         setLoadedTracks(new Map(loadedTracks));
         toast.success(`Loaded track: ${track.name}`);
+        
+        // Set elevation data if available
+        if (track.metadata?.elevation || (track.segments?.points && track.segments.points.some(p => p.elevation))) {
+          setActiveTrackElevation({
+            points: track.segments.points,
+            elevationData: track.metadata?.elevation,
+            totalDistance: track.distance_km
+          });
+          // Only show elevation profile if it has elevation data
+          if (track.segments.points.some(p => p.elevation !== undefined)) {
+            setShowElevationProfile(true);
+          }
+        }
         
         // Fit map to track bounds if available
         if (mapRef.current && track.segments.bounds) {
@@ -989,6 +1085,37 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
                 </Button>
               </div>
               
+              {/* GPX Upload Button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs w-full"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-3 w-3 mr-1" />
+                Import GPX
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".gpx"
+                onChange={handleGPXUpload}
+                className="hidden"
+              />
+              
+              {/* Elevation Profile Toggle */}
+              {activeTrackElevation && (
+                <Button
+                  size="sm"
+                  variant={showElevationProfile ? "default" : "outline"}
+                  className="text-xs w-full"
+                  onClick={() => setShowElevationProfile(!showElevationProfile)}
+                >
+                  <Mountain className="h-3 w-3 mr-1" />
+                  Elevation
+                </Button>
+              )}
+              
               {waypoints.length > 0 && (
                 <>
                   <div className="text-xs text-muted-foreground">
@@ -1089,6 +1216,27 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         </div>
       </div>
 
+      {/* Elevation Profile */}
+      {showElevationProfile && activeTrackElevation && (
+        <div className="absolute bottom-24 left-4 z-50 w-96">
+          <div className="relative">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute -top-2 -right-2 z-10 h-6 w-6 p-0 rounded-full bg-white shadow-md"
+              onClick={() => setShowElevationProfile(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <ElevationProfile
+              points={activeTrackElevation.points}
+              elevationData={activeTrackElevation.elevationData}
+              totalDistance={activeTrackElevation.totalDistance}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Toggle View Button */}
       <div className="absolute top-4 right-4 z-50">
         <Button
@@ -1109,6 +1257,20 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
           <EnhancedTripsSidebar
             userLocation={location}
             tracks={[
+              // Add uploaded GPX tracks
+              ...uploadedGPXTracks.map(track => ({
+                id: track.id,
+                name: track.name,
+                type: 'uploaded' as const,
+                visible: loadedTracks.has(track.id),
+                data: track.segments,
+                startLocation: track.segments?.points?.[0] ? {
+                  lat: track.segments.points[0].lat,
+                  lon: track.segments.points[0].lon
+                } : undefined,
+                difficulty: track.metadata?.difficulty || 'moderate',
+                length: track.distance_km || 0
+              })),
               // Add user's saved tracks from database
               ...userTracks.map(track => ({
                 id: track.id,
