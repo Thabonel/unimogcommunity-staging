@@ -112,8 +112,8 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     currentRoute, 
     routeProfile,
     isLoadingRoute,
-    isAddingMode: isAddingWaypoints,
-    setIsAddingMode: setIsAddingWaypoints,
+    isAddingMode,
+    setIsAddingMode,
     setRouteProfile,
     addWaypointAtLocation,
     clearMarkers,
@@ -466,12 +466,21 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
 
   // Toggle waypoint adding mode
   const toggleWaypointMode = () => {
-    const newMode = !isAddingWaypoints;
-    console.log('🎯 Toggling waypoint mode:', newMode ? 'ON' : 'OFF');
+    const newMode = !isAddingMode;
+    console.log('🎯 Toggling waypoint mode:', {
+      currentMode: isAddingMode,
+      newMode: newMode,
+      setFunction: typeof setIsAddingMode
+    });
     
-    setIsAddingWaypoints(newMode);  // This calls the hook's setIsAddingMode
+    setIsAddingMode(newMode);  // Direct call to hook's setIsAddingMode
     setIsAddingPOI(false); // Disable POI mode
     setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
+    
+    // Force verify the mode was set
+    setTimeout(() => {
+      console.log('🎯 After toggle - isAddingMode:', isAddingMode);
+    }, 100);
     
     if (newMode) {
       toast.info('Click on the map to add waypoints (A-2-3-B)');
@@ -481,7 +490,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   // Toggle POI adding mode
   const togglePOIMode = () => {
     setIsAddingPOI(!isAddingPOI);
-    setIsAddingWaypoints(false); // Disable waypoint mode
+    setIsAddingMode(false); // Disable waypoint mode
     if (!isAddingPOI) {
       toast.info('Click on the map to add a Point of Interest');
     }
@@ -494,9 +503,9 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     // Set cursor for POI mode
     const canvas = mapInstance.getCanvas();
     if (canvas) {
-      if (isAddingPOI && !isAddingWaypoints) {
+      if (isAddingPOI && !isAddingMode) {
         canvas.style.cursor = 'crosshair';
-      } else if (!isAddingWaypoints) {
+      } else if (!isAddingMode) {
         // Only reset cursor if waypoints aren't active (they handle their own cursor)
         canvas.style.cursor = '';
       }
@@ -505,7 +514,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     if (!isAddingPOI) return;
 
     const handlePOIClick = (e: mapboxgl.MapMouseEvent) => {
-      if (isAddingPOI && !isAddingWaypoints) {
+      if (isAddingPOI && !isAddingMode) {
         setPOICoordinates([e.lngLat.lng, e.lngLat.lat]);
         setShowPOIModal(true);
         setIsAddingPOI(false);
@@ -519,7 +528,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
         mapInstance.off('click', handlePOIClick);
       }
     };
-  }, [mapInstance, isAddingPOI, isAddingWaypoints]);
+  }, [mapInstance, isAddingPOI, isAddingMode]);
 
   // Handle POI save
   const handlePOISave = (poi: any) => {
@@ -629,7 +638,7 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
       if (savedTrack) {
         console.log('✅ Route saved successfully, cleaning up...');
         clearWaypoints();
-        setIsAddingWaypoints(false);
+        setIsAddingMode(false);
         toast.success(`Route "${data.name}" saved successfully!`);
         
         // Refresh trips list to show the new saved route
@@ -1068,20 +1077,20 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
               <div className="grid grid-cols-2 gap-1">
                 <Button
                   size="sm"
-                  variant={isAddingWaypoints ? "default" : "outline"}
+                  variant={isAddingMode ? "default" : "outline"}
                   className="text-xs"
                   onClick={toggleWaypointMode}
                   disabled={isAddingPOI}
                 >
                   <MapPin className="h-3 w-3 mr-1" />
-                  {isAddingWaypoints ? 'Stop' : 'Waypoints'}
+                  {isAddingMode ? 'Stop' : 'Waypoints'}
                 </Button>
                 <Button
                   size="sm"
                   variant={isAddingPOI ? "default" : "outline"}
                   className="text-xs"
                   onClick={togglePOIMode}
-                  disabled={isAddingWaypoints}
+                  disabled={isAddingMode}
                 >
                   <Navigation className="h-3 w-3 mr-1" />
                   {isAddingPOI ? 'Stop' : 'Add POI'}

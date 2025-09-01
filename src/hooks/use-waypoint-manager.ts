@@ -36,13 +36,30 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
   useEffect(() => {
     modesRef.current = { isAddingMode, isManualMode };
     
+    console.log('🎯 Cursor update effect:', {
+      isAddingMode,
+      isManualMode,
+      hasMap: !!map,
+      currentCursor: map?.getCanvas()?.style.cursor
+    });
+    
     // Update cursor when modes change - simple working version
     if (map) {
       const canvas = map.getCanvas();
       if (canvas) {
         if (isAddingMode || isManualMode) {
+          console.log('🎯 Setting cursor to crosshair');
           canvas.style.cursor = 'crosshair';
+          
+          // Force cursor update after potential interference
+          setTimeout(() => {
+            if ((isAddingMode || isManualMode) && canvas.style.cursor !== 'crosshair') {
+              console.log('🎯 Force-setting cursor to crosshair (was:', canvas.style.cursor, ')');
+              canvas.style.cursor = 'crosshair';
+            }
+          }, 100);
         } else {
+          console.log('🎯 Resetting cursor to default');
           canvas.style.cursor = '';
         }
       }
