@@ -27,6 +27,9 @@ import { EnhancedBarryChat } from '../knowledge/EnhancedBarryChat';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { parseGPXFile, GPXParseResult } from '@/utils/gpxUtils';
 import { ElevationProfile } from './ElevationProfile';
+import { downloadGPX, routeToGPXPoints } from '@/utils/gpxExport';
+import { AdvancedRoutingOptions } from './AdvancedRoutingOptions';
+import { useEnhancedRouting } from '@/hooks/use-enhanced-routing';
 
 // Map styles configuration
 const MAP_STYLES = {
@@ -78,6 +81,11 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   const [uploadedGPXTracks, setUploadedGPXTracks] = useState<any[]>([]);
   const [showElevationProfile, setShowElevationProfile] = useState(false);
   const [activeTrackElevation, setActiveTrackElevation] = useState<any>(null);
+  const [showAdvancedRouting, setShowAdvancedRouting] = useState(false);
+  const [terrainDifficulty, setTerrainDifficulty] = useState<'easy' | 'moderate' | 'difficult' | 'extreme'>('moderate');
+  const [avoidHighways, setAvoidHighways] = useState(false);
+  const [preferOffRoad, setPreferOffRoad] = useState(true);
+  const [maxGrade, setMaxGrade] = useState(30);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   
@@ -475,6 +483,28 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   // Toggle list view
   const toggleView = () => {
     setShowList(!showList);
+  };
+
+  // Export current route as GPX
+  const exportRouteAsGPX = () => {
+    if (!currentRoute || waypoints.length === 0) {
+      toast.error('No route to export');
+      return;
+    }
+    
+    const gpxPoints = routeToGPXPoints(currentRoute, waypoints.map(wp => ({
+      lat: wp.lat,
+      lon: wp.lng
+    })));
+    
+    const filename = `unimog-route-${new Date().toISOString().split('T')[0]}.gpx`;
+    downloadGPX(gpxPoints, filename, {
+      name: 'Unimog Route',
+      description: `Route with ${waypoints.length} waypoints`,
+      includeElevation: true
+    });
+    
+    toast.success('Route exported as GPX file');
   };
 
   // Toggle waypoint adding mode
@@ -1008,56 +1038,34 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
               Route Planning
             </div>
             
-            {/* Route Profile Selection */}
+            {/* Advanced Routing Toggle */}
             {waypoints.length > 0 && (
-              <div className="grid grid-cols-3 gap-1 mb-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant={routeProfile === 'driving' ? "default" : "outline"}
-                      className="text-xs px-2"
-                      onClick={() => setRouteProfile('driving')}
-                    >
-                      <Car className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Driving route</p>
-                  </TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant={routeProfile === 'walking' ? "default" : "outline"}
-                      className="text-xs px-2"
-                      onClick={() => setRouteProfile('walking')}
-                    >
-                      <Footprints className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Walking route</p>
-                  </TooltipContent>
-                </Tooltip>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant={routeProfile === 'cycling' ? "default" : "outline"}
-                      className="text-xs px-2"
-                      onClick={() => setRouteProfile('cycling')}
-                    >
-                      <Bike className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Cycling route</p>
-                  </TooltipContent>
-                </Tooltip>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs w-full mb-2"
+                onClick={() => setShowAdvancedRouting(!showAdvancedRouting)}
+              >
+                <Wrench className="h-3 w-3 mr-1" />
+                {showAdvancedRouting ? 'Hide' : 'Show'} Advanced Options
+              </Button>
+            )}
+            
+            {/* Advanced Routing Options */}
+            {showAdvancedRouting && waypoints.length > 0 && (
+              <div className="mb-2">
+                <AdvancedRoutingOptions
+                  routeProfile={routeProfile}
+                  onProfileChange={setRouteProfile}
+                  terrainDifficulty={terrainDifficulty}
+                  onDifficultyChange={setTerrainDifficulty}
+                  avoidHighways={avoidHighways}
+                  onAvoidHighwaysChange={setAvoidHighways}
+                  preferOffRoad={preferOffRoad}
+                  onPreferOffRoadChange={setPreferOffRoad}
+                  maxGrade={maxGrade}
+                  onMaxGradeChange={setMaxGrade}
+                />
               </div>
             )}
             
@@ -1148,23 +1156,43 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
                     </Tooltip>
                     
                     {waypoints.length >= 2 && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 text-xs"
-                            onClick={handleShareRoute}
-                            disabled={isLoadingRoute || !user}
-                          >
-                            <Share2 className="h-3 w-3 mr-1" />
-                            Share
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{!user ? "Sign in to share" : "Share this route"}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 text-xs"
+                              onClick={exportRouteAsGPX}
+                              disabled={isLoadingRoute}
+                            >
+                              <FileUp className="h-3 w-3 mr-1" />
+                              GPX
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Export route as GPX file</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 text-xs"
+                              onClick={handleShareRoute}
+                              disabled={isLoadingRoute || !user}
+                            >
+                              <Share2 className="h-3 w-3 mr-1" />
+                              Share
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{!user ? "Sign in to share" : "Share this route"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
                     )}
                   </div>
                   
