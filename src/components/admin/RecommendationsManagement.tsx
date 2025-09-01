@@ -28,12 +28,14 @@ import {
 } from "lucide-react";
 import { useRecommendations, RecommendationData } from "@/hooks/use-recommendations";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
+import { RecommendationSubmissionDialog } from "@/components/knowledge/RecommendationSubmissionDialog";
 import { cn } from "@/lib/utils";
 import { type DateRange } from "react-day-picker";
 
 const RecommendationsManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingRecommendationId, setDeletingRecommendationId] = useState<string | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   
   const {
@@ -93,7 +95,7 @@ const RecommendationsManagement = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Community Recommendations Management</h2>
-        <Button onClick={() => {/* TODO: Open create dialog */}}>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Create New Recommendation
         </Button>
@@ -293,7 +295,11 @@ const RecommendationsManagement = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {/* TODO: Open edit dialog */}}
+                    onClick={() => {
+                      // Edit functionality can be added here
+                      // For now, just show a message
+                      alert('Edit functionality coming soon. For now, delete and recreate the recommendation.');
+                    }}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -317,6 +323,15 @@ const RecommendationsManagement = () => {
         title="Delete Recommendation"
         description="Are you sure you want to delete this recommendation? This action cannot be undone."
         onConfirm={handleDeleteRecommendation}
+      />
+
+      <RecommendationSubmissionDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={() => {
+          setIsCreateDialogOpen(false);
+          fetchRecommendations();
+        }}
       />
     </div>
   );
