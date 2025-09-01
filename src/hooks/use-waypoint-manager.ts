@@ -8,9 +8,10 @@ interface WaypointManagerProps {
   map: mapboxgl.Map | null;
   onRouteUpdate?: (waypoints: Waypoint[]) => void;
   isAddingPOI?: boolean;
+  onPOIClick?: (coordinates: [number, number]) => void;
 }
 
-export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false }: WaypointManagerProps) {
+export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false, onPOIClick }: WaypointManagerProps) {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [manualWaypoints, setManualWaypoints] = useState<ManualWaypoint[]>([]);
   const [origin, setOrigin] = useState<Waypoint | null>(null);
@@ -499,7 +500,14 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false }: 
     console.log('Setting up waypoint click handler, map loaded:', map.loaded());
 
     const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
-      // Use ref to get current mode values
+      // Check if we're in POI mode first
+      if (isAddingPOI && onPOIClick) {
+        console.log('POI mode click:', e.lngLat);
+        onPOIClick([e.lngLat.lng, e.lngLat.lat]);
+        return;
+      }
+      
+      // Use ref to get current mode values for waypoints
       const { isAddingMode: addMode, isManualMode: manualMode } = modesRef.current;
       const shouldAddWaypoint = addMode || manualMode;
       
@@ -507,6 +515,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false }: 
         coords: e.lngLat,
         addMode,
         manualMode,
+        isAddingPOI,
         shouldAdd: shouldAddWaypoint
       });
       
@@ -558,7 +567,7 @@ export function useWaypointManager({ map, onRouteUpdate, isAddingPOI = false }: 
         map.off('click', handleMapClick);
       }
     };
-  }, [map, addWaypointAtLocation]);
+  }, [map, addWaypointAtLocation, isAddingPOI, onPOIClick]);
 
   // Load waypoints from an existing track
   const loadTrackWaypoints = useCallback((track: any) => {

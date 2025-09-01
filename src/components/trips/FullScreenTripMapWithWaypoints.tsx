@@ -92,7 +92,6 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const poiMarkersRef = useRef<mapboxgl.Marker[]>([]);
-  const clickListenerRef = useRef<((e: mapboxgl.MapMouseEvent) => void) | null>(null);
   
   const { location } = useUserLocation();
   const { user } = useAuth();
@@ -106,7 +105,12 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     onRouteUpdate: (waypoints) => {
       console.log('Route updated with waypoints:', waypoints.length);
     },
-    isAddingPOI
+    isAddingPOI,
+    onPOIClick: (coordinates) => {
+      setPOICoordinates(coordinates);
+      setShowPOIModal(true);
+      setIsAddingPOI(false);
+    }
   });
   
   const {
@@ -410,40 +414,8 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     console.log('🗺️ User location will be handled by GeolocateControl');
   }, [location, hasInitiallyCentered, shouldAutoCenter]);
   
-  // Store refs for the current state values
-  const isAddingPOIRef = useRef(isAddingPOI);
-  
-  // Update refs when values change
-  useEffect(() => {
-    isAddingPOIRef.current = isAddingPOI;
-  }, [isAddingPOI]);
-  
-  // Set up click listener ONCE after map loads
-  useEffect(() => {
-    if (!mapRef.current || !mapLoaded) return;
-    
-    const handleClick = (e: mapboxgl.MapMouseEvent) => {
-      // Handle POI click using ref
-      if (isAddingPOIRef.current) {
-        setPOICoordinates([e.lngLat.lng, e.lngLat.lat]);
-        setShowPOIModal(true);
-        setIsAddingPOI(false);
-        return;
-      }
-      
-      // Waypoint handling is now managed by useWaypointManager
-      // The hook handles click events internally
-    };
-    
-    mapRef.current.on('click', handleClick);
-    clickListenerRef.current = handleClick;
-    
-    return () => {
-      if (mapRef.current && clickListenerRef.current) {
-        mapRef.current.off('click', clickListenerRef.current);
-      }
-    };
-  }, [mapLoaded]); // Only depend on mapLoaded
+  // Click handling is now entirely managed by useWaypointManager
+  // This prevents conflicts between multiple click handlers
   
   // Note: Cursor changes are now handled exclusively by the waypoint manager
   // to prevent race conditions between multiple cursor handlers
