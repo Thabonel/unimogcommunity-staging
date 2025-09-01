@@ -33,9 +33,9 @@ interface RecommendationCardProps {
   businessName?: string;
   location?: string;
   rating?: number;
-  likes: number;
-  views: number;
-  saves?: number;
+  likes_count: number;
+  views_count: number;
+  saves_count?: number;
   isVerified?: boolean;
   isFeatured?: boolean;
   tags?: string[];
@@ -53,9 +53,9 @@ const RecommendationCard = ({
   businessName,
   location,
   rating,
-  likes: initialLikes,
-  views,
-  saves: initialSaves,
+  likes_count: initialLikes,
+  views_count,
+  saves_count: initialSaves,
   isVerified,
   isFeatured,
   tags
@@ -310,7 +310,7 @@ const RecommendationCard = ({
             
             <div className="flex items-center gap-1 text-muted-foreground">
               <Eye className="w-4 h-4" />
-              <span className="text-xs">{views}</span>
+              <span className="text-xs">{views_count}</span>
             </div>
           </div>
           

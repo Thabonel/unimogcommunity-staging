@@ -27,9 +27,9 @@ interface RecommendationData {
   price_range?: string;
   
   // Engagement metrics
-  likes: number;
-  views: number;
-  saves?: number;
+  likes_count: number;
+  views_count: number;
+  saves_count?: number;
   
   // Status
   is_featured?: boolean;
@@ -157,9 +157,9 @@ export function CommunityRecommendationsList({ category }: CommunityRecommendati
           businessName={recommendation.business_name}
           location={recommendation.location}
           rating={recommendation.rating}
-          likes={recommendation.likes}
-          views={recommendation.views}
-          saves={recommendation.saves}
+          likes_count={recommendation.likes_count}
+          views_count={recommendation.views_count}
+          saves_count={recommendation.saves_count}
           isVerified={recommendation.is_verified}
           isFeatured={recommendation.is_featured}
           tags={recommendation.tags}

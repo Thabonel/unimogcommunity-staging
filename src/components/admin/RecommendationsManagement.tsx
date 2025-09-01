@@ -71,8 +71,8 @@ const RecommendationsManagement = () => {
   
   const filteredRecommendations = recommendations.filter(rec => {
     if (statusFilter === "all") return true;
-    if (statusFilter === "published") return rec.is_approved === true;
-    if (statusFilter === "draft") return rec.is_approved === false;
+    if (statusFilter === "published") return rec.is_published === true;
+    if (statusFilter === "draft") return rec.is_published === false;
     if (statusFilter === "featured") return rec.is_featured === true;
     if (statusFilter === "verified") return rec.is_verified === true;
     return true;
@@ -116,14 +116,14 @@ const RecommendationsManagement = () => {
             onClick={() => setStatusFilter("published")}
             size="sm"
           >
-            Published ({recommendations.filter(r => r.is_approved).length})
+            Published ({recommendations.filter(r => r.is_published).length})
           </Button>
           <Button 
             variant={statusFilter === "draft" ? "default" : "outline"}
             onClick={() => setStatusFilter("draft")}
             size="sm"
           >
-            Drafts ({recommendations.filter(r => !r.is_approved).length})
+            Drafts ({recommendations.filter(r => !r.is_published).length})
           </Button>
           <Button 
             variant={statusFilter === "featured" ? "default" : "outline"}
@@ -232,8 +232,8 @@ const RecommendationsManagement = () => {
               </TableCell>
               <TableCell>{rec.author_name || 'Unknown'}</TableCell>
               <TableCell>
-                <Badge variant={rec.is_approved ? "default" : "secondary"}>
-                  {rec.is_approved ? "Published" : "Draft"}
+                <Badge variant={rec.is_published ? "default" : "secondary"}>
+                  {rec.is_published ? "Published" : "Draft"}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -274,9 +274,9 @@ const RecommendationsManagement = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => updateRecommendationStatus(rec.id, !rec.is_approved)}
+                    onClick={() => updateRecommendationStatus(rec.id, !rec.is_published)}
                   >
-                    {rec.is_approved ? "Unpublish" : "Publish"}
+                    {rec.is_published ? "Unpublish" : "Publish"}
                   </Button>
                   <Button
                     size="sm"

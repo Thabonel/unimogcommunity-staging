@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { FileText, Disc } from 'lucide-react';
-import { ArticleSubmissionDialog } from '@/components/knowledge/ArticleSubmissionDialog';
-import { CategoryArticlesList } from '@/components/admin/CategoryArticlesList';
+import { RecommendationSubmissionDialog } from '@/components/knowledge/RecommendationSubmissionDialog';
+import { CommunityRecommendationsList } from '@/components/knowledge/CommunityRecommendationsList';
 import { KnowledgeNavigation } from '@/components/knowledge/KnowledgeNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/profile';
@@ -65,9 +65,8 @@ const TyresPage = () => {
         
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Community Tyre Recommendations</h2>
-          <CategoryArticlesList 
-            category="Tyres" 
-            isAdmin={isAdmin}
+          <CommunityRecommendationsList 
+            category="tyres" 
           />
         </div>
         
@@ -83,11 +82,11 @@ const TyresPage = () => {
           </div>
         </div>
         
-        {/* Article Submission Dialog */}
-        <ArticleSubmissionDialog
+        {/* Recommendation Submission Dialog */}
+        <RecommendationSubmissionDialog
           open={submissionDialogOpen}
           onOpenChange={setSubmissionDialogOpen}
-          category="Tyres"
+          defaultCategory="tyres"
         />
       </div>
     </Layout>

@@ -17,13 +17,13 @@ export interface RecommendationData {
   author_name?: string;
   author_avatar?: string;
   cover_image?: string;
-  is_approved: boolean;
+  is_published: boolean;
   is_featured?: boolean;
   is_verified?: boolean;
   tags?: string[];
-  likes?: number;
-  views?: number;
-  saves?: number;
+  likes_count?: number;
+  views_count?: number;
+  saves_count?: number;
   created_at: string;
   published_at?: string | null;
   order?: number;
@@ -45,7 +45,7 @@ export function useRecommendations() {
       let query = supabase
         .from("community_recommendations")
         .select("*")
-        .order("is_approved", { ascending: false }) // Published recommendations first
+        .order("is_published", { ascending: false }) // Published recommendations first
         .order("published_at", { ascending: false });
 
       if (dateRange.from) {
@@ -176,27 +176,27 @@ export function useRecommendations() {
     }
   };
   
-  const updateRecommendationStatus = async (recommendationId: string, isApproved: boolean) => {
+  const updateRecommendationStatus = async (recommendationId: string, isPublished: boolean) => {
     try {
       const { error } = await supabase
         .from("community_recommendations")
         .update({ 
-          is_approved: isApproved,
-          published_at: isApproved ? new Date().toISOString() : null
+          is_published: isPublished,
+          published_at: isPublished ? new Date().toISOString() : null
         })
         .eq("id", recommendationId);
         
       if (error) throw error;
       
       toast({
-        title: isApproved ? "Recommendation published" : "Recommendation unpublished",
-        description: `Recommendation has been ${isApproved ? 'published' : 'moved to drafts'}.`
+        title: isPublished ? "Recommendation published" : "Recommendation unpublished",
+        description: `Recommendation has been ${isPublished ? 'published' : 'moved to drafts'}.`
       });
       
       // Update local state
       setRecommendations(recommendations.map(rec => 
         rec.id === recommendationId 
-          ? {...rec, is_approved: isApproved, published_at: isApproved ? new Date().toISOString() : null}
+          ? {...rec, is_published: isPublished, published_at: isPublished ? new Date().toISOString() : null}
           : rec
       ));
       
