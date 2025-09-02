@@ -9,7 +9,7 @@ import { usePdfLoader } from './pdf-viewer/usePdfLoader';
 import { toast } from '@/hooks/use-toast';
 
 // Set up the worker source with fallback options
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface SimplePDFViewerProps {
   url: string;
