@@ -70,6 +70,63 @@ export function SimplePDFViewer({ url, onClose }: SimplePDFViewerProps) {
     }
   };
 
+  // Add keyboard and mouse wheel navigation
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!pdfDoc) return;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+        case 'ArrowUp':
+        case 'PageUp':
+          e.preventDefault();
+          handlePageChange(currentPage - 1);
+          break;
+        case 'ArrowRight':
+        case 'ArrowDown':
+        case 'PageDown':
+          e.preventDefault();
+          handlePageChange(currentPage + 1);
+          break;
+        case 'Home':
+          e.preventDefault();
+          handlePageChange(1);
+          break;
+        case 'End':
+          e.preventDefault();
+          handlePageChange(numPages);
+          break;
+      }
+    };
+    
+    // Add mouse wheel navigation
+    const handleWheel = (e: WheelEvent) => {
+      if (!pdfDoc) return;
+      
+      // Only handle wheel events when the PDF viewer is open
+      const pdfViewerElement = document.querySelector('.pdf-container');
+      if (!pdfViewerElement) return;
+      
+      e.preventDefault();
+      
+      // Scroll down = next page, scroll up = previous page
+      if (e.deltaY > 0) {
+        handlePageChange(currentPage + 1);
+      } else if (e.deltaY < 0) {
+        handlePageChange(currentPage - 1);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    // Use passive: false to allow preventDefault
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, [currentPage, numPages, pdfDoc]);
+
   // Handle document download
   const handleDownload = () => {
     const link = document.createElement('a');
