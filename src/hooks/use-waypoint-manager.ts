@@ -126,7 +126,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index);  // Show 2, 3, 4... for middle waypoints (fixed: was index + 1)
+        displayLabel = String(index + 1);  // Show 2, 3, 4... for middle waypoints (corrected back)
       }
       
       console.log('🎯 Creating marker:', {
@@ -141,15 +141,12 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       // Add CSS classes instead of inline styles - let CSS handle the styling
       el.className = `waypoint-marker ${displayType}`;
       
-      // Add debug class for testing visibility
-      el.classList.add('debug');
-      
       // Set the text content
       el.innerText = displayLabel;
     } else {
       // Manual waypoint
-      el.className = 'waypoint-marker manual debug';
-      el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
+      el.className = 'waypoint-marker manual';
+      el.innerText = String(index + 1);  // Show 2, 3, 4... for middle waypoints
     }
 
     // Add click handler to remove waypoint (except origin/destination)
