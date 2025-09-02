@@ -134,7 +134,9 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         totalWaypoints,
         displayType,
         displayLabel,
-        waypointType: waypoint.type
+        waypointType: waypoint.type,
+        coords: coords,
+        elementHTML: el.outerHTML
       });
       
       switch (displayType) {
@@ -237,9 +239,28 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       });
     }
 
+    // Debug final element before adding to map
+    console.log('🎯 Final marker element:', {
+      displayLabel,
+      finalHTML: el.outerHTML,
+      computedStyles: {
+        width: el.style.width,
+        height: el.style.height,
+        background: el.style.background,
+        display: el.style.display,
+        innerText: el.innerText
+      }
+    });
+
     const marker = new mapboxgl.Marker({ element: el })
       .setLngLat(coords)
       .addTo(map);
+
+    console.log('🎯 Marker added to map:', {
+      coords: coords,
+      element: el,
+      marker: marker
+    });
 
     return marker;
   }, [map]);
