@@ -1,9 +1,9 @@
 /* Mapbox CSS Fixes and Enhancements */
 
-/* Ensure map containers have proper dimensions */
+/* Ensure map containers have proper dimensions - Allow Mapbox to handle positioning */
 .mapbox-container,
 .mapboxgl-map {
-  position: relative !important;
+  position: relative;
   width: 100% !important;
   height: 100% !important;
 }
@@ -89,11 +89,36 @@
   opacity: 1 !important;
 }
 
-/* Force map to be interactive */
+/* Force map to be interactive - Allow cursor override for waypoint mode */
 .mapboxgl-canvas {
-  cursor: grab !important;
+  cursor: grab;
 }
 
 .mapboxgl-canvas:active {
-  cursor: grabbing !important;
+  cursor: grabbing;
+}
+
+/* Allow waypoint crosshair cursor to override grab cursor */
+.mapboxgl-canvas[style*="crosshair"] {
+  cursor: crosshair !important;
+}
+
+.mapboxgl-canvas.waypoint-mode {
+  cursor: crosshair !important;
+}
+
+/* Ensure Mapbox markers are properly attached to coordinates */
+.mapboxgl-marker {
+  /* Let Mapbox handle all positioning - no CSS interference */
+  position: absolute !important;
+  pointer-events: auto !important;
+  /* Ensure markers transform with map coordinates */
+  transform-origin: center center !important;
+}
+
+/* Prevent any overlay interference with markers */
+.mapboxgl-marker .waypoint-marker {
+  /* Marker content should not interfere with positioning */
+  position: relative !important;
+  transform: none !important;
 }

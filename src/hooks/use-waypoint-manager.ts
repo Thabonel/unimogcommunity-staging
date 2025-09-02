@@ -44,24 +44,33 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       currentCursor: map?.getCanvas()?.style.cursor
     });
     
-    // Update cursor when modes change - simple working version from docs
+    // Update cursor when modes change - enhanced with CSS class for better override
     if (map && map.loaded()) {
       const canvas = map.getCanvas();
       if (canvas) {
         const targetCursor = (isAddingMode || isManualMode) ? 'crosshair' : '';
         console.log('🎯 Setting cursor from', canvas.style.cursor, 'to', targetCursor);
-        canvas.style.cursor = targetCursor;
         
-        // Force immediate style update
-        canvas.style.setProperty('cursor', targetCursor, 'important');
+        // Add/remove CSS class for waypoint mode to override mapbox-fixes.css
+        if (isAddingMode || isManualMode) {
+          canvas.classList.add('waypoint-mode');
+          canvas.style.cursor = 'crosshair';
+          canvas.style.setProperty('cursor', 'crosshair', 'important');
+        } else {
+          canvas.classList.remove('waypoint-mode');
+          canvas.style.cursor = '';
+          canvas.style.removeProperty('cursor');
+        }
         
         // Verify the change took effect
         setTimeout(() => {
           const actualCursor = canvas.style.cursor;
+          const hasClass = canvas.classList.contains('waypoint-mode');
           console.log('🎯 Cursor verification:', {
             expected: targetCursor,
             actual: actualCursor,
-            match: actualCursor === targetCursor
+            hasWaypointClass: hasClass,
+            match: actualCursor === targetCursor || (targetCursor === 'crosshair' && hasClass)
           });
         }, 10);
       }
