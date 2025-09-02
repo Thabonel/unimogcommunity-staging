@@ -176,6 +176,7 @@ export function SimplePDFViewer({ url, onClose }: SimplePDFViewerProps) {
   };
 
   // If there's an error and we have a URL, show option to open directly
+  console.log('🚨 PDF Viewer Error Check:', { error, url, isLoading });
   if (error && url) {
     return (
       <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
