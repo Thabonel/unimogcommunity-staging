@@ -470,17 +470,34 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     console.log('🎯 Toggling waypoint mode:', {
       currentMode: isAddingMode,
       newMode: newMode,
-      setFunction: typeof setIsAddingMode
+      setFunction: typeof setIsAddingMode,
+      mapInstance: !!mapInstance,
+      mapLoaded: mapInstance?.loaded?.()
     });
     
     setIsAddingMode(newMode);  // Direct call to hook's setIsAddingMode
     setIsAddingPOI(false); // Disable POI mode
     setShouldAutoCenter(false); // Prevent auto-centering when in waypoint mode
     
-    // Force verify the mode was set
+    // Immediate verification 
+    console.log('🎯 State immediately after toggle:', { isAddingMode, newMode });
+    
+    // Force verify the mode was set and cursor changed
     setTimeout(() => {
-      console.log('🎯 After toggle - isAddingMode:', isAddingMode);
-    }, 100);
+      console.log('🎯 After toggle verification:', {
+        isAddingMode: isAddingMode,
+        mapCursor: mapInstance?.getCanvas()?.style.cursor,
+        expectedCursor: newMode ? 'crosshair' : ''
+      });
+    }, 50);
+    
+    // Also check after React state update
+    setTimeout(() => {
+      console.log('🎯 React state update verification:', {
+        isAddingMode: isAddingMode,
+        mapCursor: mapInstance?.getCanvas()?.style.cursor
+      });
+    }, 200);
     
     if (newMode) {
       toast.info('Click on the map to add waypoints (A-2-3-B)');

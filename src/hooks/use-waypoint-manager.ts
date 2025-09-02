@@ -40,21 +40,33 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       isAddingMode,
       isManualMode,
       hasMap: !!map,
+      mapLoaded: map?.loaded?.(),
       currentCursor: map?.getCanvas()?.style.cursor
     });
     
     // Update cursor when modes change - simple working version from docs
-    if (map) {
+    if (map && map.loaded()) {
       const canvas = map.getCanvas();
       if (canvas) {
-        if (isAddingMode || isManualMode) {
-          console.log('🎯 Setting cursor to crosshair');
-          canvas.style.cursor = 'crosshair';
-        } else {
-          console.log('🎯 Resetting cursor to default');
-          canvas.style.cursor = '';
-        }
+        const targetCursor = (isAddingMode || isManualMode) ? 'crosshair' : '';
+        console.log('🎯 Setting cursor from', canvas.style.cursor, 'to', targetCursor);
+        canvas.style.cursor = targetCursor;
+        
+        // Force immediate style update
+        canvas.style.setProperty('cursor', targetCursor, 'important');
+        
+        // Verify the change took effect
+        setTimeout(() => {
+          const actualCursor = canvas.style.cursor;
+          console.log('🎯 Cursor verification:', {
+            expected: targetCursor,
+            actual: actualCursor,
+            match: actualCursor === targetCursor
+          });
+        }, 10);
       }
+    } else if (map && !map.loaded()) {
+      console.log('🎯 Map not loaded yet, will set cursor when ready');
     }
   }, [isAddingMode, isManualMode, map]);
 
