@@ -496,19 +496,18 @@ const FullScreenTripMapWithWaypoints: React.FC<FullScreenTripMapProps> = ({
     }
   };
 
-  // Handle POI clicks and cursor separately from waypoint clicks
+  // Handle POI clicks and cursor coordination
   useEffect(() => {
     if (!mapInstance) return;
 
-    // Set cursor for POI mode
+    // Set cursor for POI mode, but don't interfere with waypoint mode
     const canvas = mapInstance.getCanvas();
     if (canvas) {
+      // Only manage cursor for POI mode when waypoint mode is NOT active
       if (isAddingPOI && !isAddingMode) {
         canvas.style.cursor = 'crosshair';
-      } else if (!isAddingMode) {
-        // Only reset cursor if waypoints aren't active (they handle their own cursor)
-        canvas.style.cursor = '';
       }
+      // Don't reset cursor - let waypoint manager handle it when it's active
     }
 
     if (!isAddingPOI) return;
