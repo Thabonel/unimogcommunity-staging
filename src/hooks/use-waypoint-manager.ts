@@ -43,37 +43,13 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       currentCursor: map?.getCanvas()?.style.cursor
     });
     
-    // Update cursor when modes change - simple working version
+    // Update cursor when modes change - simple working version from docs
     if (map) {
       const canvas = map.getCanvas();
       if (canvas) {
         if (isAddingMode || isManualMode) {
           console.log('🎯 Setting cursor to crosshair');
           canvas.style.cursor = 'crosshair';
-          
-          // Force cursor update after potential interference
-          setTimeout(() => {
-            if ((isAddingMode || isManualMode) && canvas.style.cursor !== 'crosshair') {
-              console.log('🎯 Force-setting cursor to crosshair (was:', canvas.style.cursor, ')');
-              canvas.style.cursor = 'crosshair';
-              canvas.style.setProperty('cursor', 'crosshair', 'important');
-            }
-          }, 100);
-          
-          // Keep checking and forcing crosshair while mode is active
-          const cursorInterval = setInterval(() => {
-            if (isAddingMode || isManualMode) {
-              const currentCursor = canvas.style.cursor;
-              if (currentCursor !== 'crosshair') {
-                console.log('🎯 Cursor was changed to:', currentCursor, '- forcing back to crosshair');
-                canvas.style.setProperty('cursor', 'crosshair', 'important');
-              }
-            } else {
-              clearInterval(cursorInterval);
-            }
-          }, 250);
-          
-          return () => clearInterval(cursorInterval);
         } else {
           console.log('🎯 Resetting cursor to default');
           canvas.style.cursor = '';
@@ -161,9 +137,12 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
             align-items: center;
             justify-content: center;
             color: white;
+            font-size: 14px;
             font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             cursor: pointer;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           `;
           el.innerText = displayLabel;
           break;
@@ -178,9 +157,12 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
             align-items: center;
             justify-content: center;
             color: white;
+            font-size: 14px;
             font-weight: bold;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             cursor: pointer;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           `;
           el.innerText = displayLabel;
           break;
@@ -199,6 +181,8 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             cursor: pointer;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           `;
           el.innerText = displayLabel;
           break;
@@ -217,6 +201,8 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             cursor: pointer;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           `;
           el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
           break;
@@ -237,6 +223,8 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         font-weight: bold;
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         cursor: pointer;
+        user-select: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       `;
       el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
     }
