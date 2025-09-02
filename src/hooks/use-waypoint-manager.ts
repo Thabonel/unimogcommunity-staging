@@ -135,99 +135,20 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayType,
         displayLabel,
         waypointType: waypoint.type,
-        coords: coords,
-        elementHTML: el.outerHTML
+        coords: coords
       });
       
-      switch (displayType) {
-        case 'origin':
-          el.style.cssText = `
-            width: 32px;
-            height: 32px;
-            background: #10b981;
-            border: 3px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            cursor: pointer;
-          `;
-          el.innerText = displayLabel;
-          break;
-        case 'destination':
-          el.style.cssText = `
-            width: 32px;
-            height: 32px;
-            background: #ef4444;
-            border: 3px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            cursor: pointer;
-          `;
-          el.innerText = displayLabel;
-          break;
-        case 'waypoint':
-          el.style.cssText = `
-            width: 24px;
-            height: 24px;
-            background: #3b82f6;
-            border: 2px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            cursor: pointer;
-          `;
-          el.innerText = displayLabel;
-          break;
-        case 'manual':
-          el.style.cssText = `
-            width: 24px;
-            height: 24px;
-            background: #dc2626;
-            border: 2px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            cursor: pointer;
-          `;
-          el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
-          break;
-      }
+      // Add CSS classes instead of inline styles - let CSS handle the styling
+      el.className = `waypoint-marker ${displayType}`;
+      
+      // Add debug class for testing visibility
+      el.classList.add('debug');
+      
+      // Set the text content
+      el.innerText = displayLabel;
     } else {
       // Manual waypoint
-      el.style.cssText = `
-        width: 24px;
-        height: 24px;
-        background: #dc2626;
-        border: 2px solid white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        cursor: pointer;
-      `;
+      el.className = 'waypoint-marker manual debug';
       el.innerText = String(index);  // Show 2, 3, 4... for middle waypoints
     }
 
@@ -242,14 +163,9 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
     // Debug final element before adding to map
     console.log('🎯 Final marker element:', {
       displayLabel,
-      finalHTML: el.outerHTML,
-      computedStyles: {
-        width: el.style.width,
-        height: el.style.height,
-        background: el.style.background,
-        display: el.style.display,
-        innerText: el.innerText
-      }
+      className: el.className,
+      innerText: el.innerText,
+      finalHTML: el.outerHTML
     });
 
     const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
