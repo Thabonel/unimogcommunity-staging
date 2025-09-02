@@ -16,6 +16,8 @@ interface SimplePDFViewerProps {
 }
 
 export function SimplePDFViewer({ url, onClose }: SimplePDFViewerProps) {
+  console.log('🎯 SimplePDFViewer rendered with URL:', url);
+  
   // Use our custom hooks for state management and PDF loading
   const {
     currentPage,

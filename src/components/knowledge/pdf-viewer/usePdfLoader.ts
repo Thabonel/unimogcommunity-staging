@@ -25,10 +25,12 @@ export const usePdfLoader = ({
         setIsLoading(true);
         setError(null);
 
-        console.log('Loading PDF from URL:', url);
+        console.log('🔍 Loading PDF from URL:', url);
+        console.log('🔍 PDF.js version:', pdfjsLib.version);
         
         // Check if URL is valid
         if (!url || url === 'null' || url === 'undefined') {
+          console.error('❌ Invalid PDF URL:', url);
           throw new Error('Invalid PDF URL provided');
         }
 
@@ -46,14 +48,20 @@ export const usePdfLoader = ({
           standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.54/standard_fonts/'
         });
         
+        console.log('📄 PDF loading task created, waiting for document...');
         const pdf = await loadingTask.promise;
         
-        console.log('PDF loaded successfully, pages:', pdf.numPages);
+        console.log('✅ PDF loaded successfully! Pages:', pdf.numPages);
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(1);
       } catch (error: any) {
-        console.error('Error loading PDF:', error);
+        console.error('❌ PDF loading failed:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack?.slice(0, 200)
+        });
         
         // More specific error messages
         let errorMessage = 'Failed to load PDF document.';

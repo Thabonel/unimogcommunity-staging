@@ -102,7 +102,8 @@ export function useManuals() {
     try {
       // Use the new getManualUrl with fallback
       const url = await getManualUrl(fileName);
-      console.log('Opening PDF with URL:', url);
+      console.log('🔗 Generated PDF URL:', url);
+      console.log('🔗 Setting viewingPdf state to:', url);
       setViewingPdf(url);
     } catch (error) {
       console.error('Error viewing manual:', error);
