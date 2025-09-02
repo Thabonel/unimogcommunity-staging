@@ -126,7 +126,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
         displayLabel = 'B';
       } else {
         displayType = 'waypoint';
-        displayLabel = String(index + 1);  // Show 2, 3, 4... for middle waypoints
+        displayLabel = String(index);  // Show 2, 3, 4... for middle waypoints (fixed: was index + 1)
       }
       
       console.log('🎯 Creating marker:', {
@@ -252,7 +252,7 @@ export function useWaypointManager({ map, onRouteUpdate }: WaypointManagerProps)
       }
     });
 
-    const marker = new mapboxgl.Marker({ element: el })
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat(coords)
       .addTo(map);
 
