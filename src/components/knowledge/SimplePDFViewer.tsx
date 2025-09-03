@@ -8,8 +8,8 @@ import { usePdfViewerState } from './pdf-viewer/usePdfViewerState';
 import { usePdfLoader } from './pdf-viewer/usePdfLoader';
 import { toast } from '@/hooks/use-toast';
 
-// Use local worker to avoid CSP and service worker issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+// Set up the worker source with fallback options
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface SimplePDFViewerProps {
   url: string;
