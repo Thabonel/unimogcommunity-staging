@@ -1,8 +1,8 @@
 // Service Worker for Unimog Community Hub
-// Version 1.0.0
+// Version 2.0.0 - Fixed stale cache issue
 
-const CACHE_NAME = 'unimog-hub-v1';
-const DYNAMIC_CACHE_NAME = 'unimog-hub-dynamic-v1';
+const CACHE_NAME = 'unimog-hub-v2';
+const DYNAMIC_CACHE_NAME = 'unimog-hub-dynamic-v2';
 const MAX_DYNAMIC_CACHE_SIZE = 100;
 
 // Resources to cache immediately
@@ -142,13 +142,20 @@ async function handleApiRequest(request) {
   }
 }
 
-// Handle static resources with cache-first strategy
+// Handle static resources with smart caching strategy
 async function handleStaticRequest(request) {
-  // Check if request is in cache
+  const url = new URL(request.url);
+  
+  // Use network-first for HTML documents to prevent stale app
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('.html') || url.pathname === '/') {
+    return handleHtmlRequest(request);
+  }
+  
+  // Use cache-first for actual static assets (CSS, JS, images, etc.)
   const cachedResponse = await caches.match(request);
   
   if (cachedResponse) {
-    // Return cached version and update cache in background
+    // Return cached version and update cache in background for static assets
     updateCache(request);
     return cachedResponse;
   }
@@ -177,6 +184,46 @@ async function handleStaticRequest(request) {
     }
     
     // Return 503 for other requests
+    return new Response('Network error', {
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+  }
+}
+
+// Handle HTML requests with network-first strategy to prevent stale app
+async function handleHtmlRequest(request) {
+  try {
+    // Try network first for HTML documents
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      // Cache the fresh HTML
+      const responseToCache = networkResponse.clone();
+      const cache = await caches.open(DYNAMIC_CACHE_NAME);
+      cache.put(request, responseToCache);
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('[Service Worker] Network failed for HTML, checking cache:', request.url);
+    
+    // If network fails, try cache
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Return offline page as last resort
+    if (request.mode === 'navigate') {
+      const cache = await caches.open(CACHE_NAME);
+      const offlinePage = await cache.match('/offline.html');
+      if (offlinePage) {
+        return offlinePage;
+      }
+    }
+    
     return new Response('Network error', {
       status: 503,
       statusText: 'Service Unavailable',
