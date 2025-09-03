@@ -146,8 +146,8 @@ async function handleApiRequest(request) {
 async function handleStaticRequest(request) {
   const url = new URL(request.url);
   
-  // Use network-first for HTML documents to prevent stale app
-  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('.html') || url.pathname === '/') {
+  // Use network-first for HTML documents to prevent stale app (but not PDFs)
+  if (!url.pathname.endsWith('.pdf') && (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html') || url.pathname.endsWith('.html') || url.pathname === '/')) {
     return handleHtmlRequest(request);
   }
   
