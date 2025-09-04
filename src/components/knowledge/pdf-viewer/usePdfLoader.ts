@@ -43,9 +43,9 @@ export const usePdfLoader = ({
           isEvalSupported: false, // Disable eval for security
           disableAutoFetch: false, // Allow auto fetching
           disableFontFace: false, // Allow font loading
-          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.54/cmaps/',
+          cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
           cMapPacked: true,
-          standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.54/standard_fonts/'
+          standardFontDataUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`
         });
         
         console.log('📄 PDF loading task created, waiting for document...');

@@ -8,7 +8,7 @@ import { usePdfViewerState } from './pdf-viewer/usePdfViewerState';
 import { usePdfLoader } from './pdf-viewer/usePdfLoader';
 import { toast } from '@/hooks/use-toast';
 
-// Set up the worker source with fallback options
+// Set up the worker source to auto-match PDF.js version (fixes version mismatch issues)
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface SimplePDFViewerProps {

@@ -1,3 +1,0 @@
-name: test-writer
-model: sonnet
-description: Generates unit tests, integration tests, and test cases
