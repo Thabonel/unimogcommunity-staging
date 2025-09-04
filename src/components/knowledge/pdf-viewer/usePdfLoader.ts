@@ -27,6 +27,7 @@ export const usePdfLoader = ({
 
         console.log('🔍 Loading PDF from URL:', url);
         console.log('🔍 PDF.js version:', pdfjsLib.version);
+        console.log('🔍 PDF.js worker source:', pdfjsLib.GlobalWorkerOptions.workerSrc);
         
         // Check if URL is valid
         if (!url || url === 'null' || url === 'undefined') {
