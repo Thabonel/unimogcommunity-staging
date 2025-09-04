@@ -338,6 +338,59 @@ type(scope): description
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
+## 🚀 Development Methodology
+
+### Parallel Agent Development Process
+Our development workflow leverages Claude Code's agent system for efficient, high-quality development:
+
+#### 1. Plan the Architecture
+- **PRD (Product Requirements Document)**: Define what we're building and why
+- **ADR (Architecture Decision Records)**: Document technical decisions and alternatives
+- **Structure Design**: Plan component hierarchy, data flow, and system boundaries
+
+#### 2. Define Types and Tests as Guardrails
+- **TypeScript Interfaces**: Define data contracts first
+- **Test Specifications**: Write test cases before implementation
+- **API Contracts**: Define endpoint schemas and validation rules
+
+#### 3. Build with Parallel Agents
+- **Frontend Specialist**: React components, UI/UX, state management
+- **Backend Expert**: Database, API endpoints, business logic
+- **Security Reviewer**: Vulnerability analysis, access control
+- **Test Developer**: Comprehensive test coverage and automation
+
+#### 4. Review Tests and Key Decisions
+- **Code Review**: Quality, bugs, and best practices validation
+- **Security Audit**: OWASP compliance and penetration testing
+- **Performance Review**: Optimization and scalability analysis
+
+#### 5. Document Everything in ADR
+- **Decision Context**: Why we chose this approach
+- **Alternatives Considered**: What we evaluated but didn't choose
+- **Implementation Details**: How the solution works
+- **Future Considerations**: Scaling and maintenance notes
+
+#### 6. Repeat with Full Context Preserved
+- **Iterative Development**: Build on previous decisions
+- **Context Continuity**: Maintain architectural consistency
+- **Knowledge Transfer**: Ensure all decisions are documented
+
+### Agent Specializations Available
+- `react-frontend-specialist` - React and TypeScript expertise
+- `fastapi-backend-expert` - Backend and database optimization  
+- `security-reviewer` - Security vulnerability analysis
+- `test-writer` - Comprehensive test creation
+- `code-reviewer` - Quality and best practices review
+- `performance-optimizer` - Speed and efficiency improvements
+- `database-architect` - Database design and optimization
+
+### Benefits
+- **Faster Development**: Parallel execution across multiple domains
+- **Higher Quality**: Specialized expertise for each component
+- **Better Documentation**: Comprehensive ADRs for all decisions
+- **Reduced Technical Debt**: Upfront planning prevents architectural issues
+- **Knowledge Preservation**: Full context maintained across iterations
+
 ## 🎯 Unimog-Specific Guidelines
 
 ### Terminology
