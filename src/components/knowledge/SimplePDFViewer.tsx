@@ -7,9 +7,7 @@ import { PdfSearchBar } from './pdf-viewer/PdfSearchBar';
 import { usePdfViewerState } from './pdf-viewer/usePdfViewerState';
 import { usePdfLoader } from './pdf-viewer/usePdfLoader';
 import { toast } from '@/hooks/use-toast';
-
-// Use local worker to avoid CSP and service worker issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+import '@/utils/pdfWorkerSetup'; // Initialize PDF.js worker
 
 interface SimplePDFViewerProps {
   url: string;
@@ -64,7 +62,7 @@ export function SimplePDFViewer({ url, onClose }: SimplePDFViewerProps) {
 
   // Explicitly handle page changes
   const handlePageChange = (page: number) => {
-    console.log(`Changing to page ${page}`);
+    console.log(`Changing to page ${page} of ${numPages}`);
     if (page >= 1 && page <= numPages) {
       setCurrentPage(page);
     }
