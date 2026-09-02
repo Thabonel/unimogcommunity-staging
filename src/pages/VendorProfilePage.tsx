@@ -33,6 +33,7 @@ interface Vendor {
   logo_url: string | null;
   hero_image_url: string | null;
   website_url: string | null;
+  quote_url: string | null;
   email: string | null;
   phone: string | null;
   location: string | null;
@@ -363,13 +364,17 @@ export default function VendorProfilePage() {
                                   </Button>
                                 );
                               } else {
+                                const quoteUrl = vendor.quote_url || vendor.website_url;
+                                if (!quoteUrl) return null;
+
                                 return (
                                   <Button
-                                    onClick={() => navigate(`/shop/quote/${idx}`)}
+                                    onClick={() => handleWebsiteClick(vendor.id, quoteUrl)}
                                     className="w-full bg-camo-brown hover:bg-camo-brown/90"
                                     size="sm"
                                   >
                                     Request Quote
+                                    <ExternalLink className="h-4 w-4 ml-2" />
                                   </Button>
                                 );
                               }
